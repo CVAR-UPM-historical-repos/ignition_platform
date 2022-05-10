@@ -22,6 +22,7 @@ find_package(std_srvs REQUIRED)
 find_package(ignition-transport11 REQUIRED)
 find_package(ignition-msgs8 REQUIRED)
 find_package(ros_ign_bridge REQUIRED)
+find_package(ros_ign_gazebo REQUIRED)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -53,6 +54,7 @@ ament_target_dependencies(${PROJECT_NAME}_node
   ignition-transport11
   ignition-msgs8
   ros_ign_bridge
+  ros_ign_gazebo
 )
 
 
