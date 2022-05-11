@@ -5,7 +5,7 @@ project(${PROJECT_NAME})
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 # find dependencies
@@ -18,11 +18,14 @@ find_package(nav_msgs REQUIRED)
 find_package(as2_core REQUIRED)
 find_package(as2_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(image_transport REQUIRED)
 
 find_package(ignition-transport11 REQUIRED)
 find_package(ignition-msgs8 REQUIRED)
 find_package(ros_ign_bridge REQUIRED)
 find_package(ros_ign_gazebo REQUIRED)
+
+
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -51,6 +54,7 @@ ament_target_dependencies(${PROJECT_NAME}_node
   as2_core
   as2_msgs
   geometry_msgs
+  image_transport
   ignition-transport11
   ignition-msgs8
   ros_ign_bridge
@@ -71,6 +75,11 @@ endif()
 
 install(
   DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(DIRECTORY
+  config
   DESTINATION share/${PROJECT_NAME}
 )
 

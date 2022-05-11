@@ -6,7 +6,7 @@ int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<ignition_platform::IgnitionPlatform>();
-  node->preset_loop_frequency(30);
+  node->preset_loop_frequency(60);
   as2::spinLoop(node);  
   
   rclcpp::shutdown();
