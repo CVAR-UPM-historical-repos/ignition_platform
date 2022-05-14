@@ -3,28 +3,15 @@ set(PROJECT_NAME ignition_platform)
 set(NODE_NAME ignition_platform)
 project(${PROJECT_NAME})
 
-# Default to C++14
+# Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()
 
-# find dependencies
-# find_package(ament_cmake REQUIRED)
-# find_package(rclcpp REQUIRED)
-# find_package(std_msgs REQUIRED)
-# find_package(sensor_msgs REQUIRED)
-# find_package(geometry_msgs REQUIRED)
-# find_package(nav_msgs REQUIRED)
-# find_package(as2_core REQUIRED)
-# find_package(as2_msgs REQUIRED)
-# find_package(std_srvs REQUIRED)
-# find_package(image_transport REQUIRED)
-
-# find_package(ignition-transport11 REQUIRED)
-# find_package(ignition-msgs8 REQUIRED)
-# find_package(ros_ign_bridge REQUIRED)
-# find_package(ros_ign_gazebo REQUIRED)
-
+# set Release as default
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 
 set(PROJECT_DEPENDENCIES
   ament_cmake
@@ -51,10 +38,6 @@ foreach(DEPENDENCY ${PROJECT_DEPENDENCIES})
   find_package(${DEPENDENCY} REQUIRED)
 endforeach()
 
-
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
 set(SOURCE_CPP_FILES 
   lib/${NODE_NAME}.cpp
   lib/ignition_bridge.cpp
@@ -87,7 +70,6 @@ ament_target_dependencies(${PROJECT_NAME}_node
   ros_ign_gazebo
 )
 
-
 if(BUILD_TESTING)
   find_package(ament_cmake_cpplint REQUIRED)
   find_package(ament_cmake_cppcheck REQUIRED)
@@ -112,10 +94,5 @@ install(DIRECTORY
 install(TARGETS
   ${PROJECT_NAME}_node
   DESTINATION lib/${PROJECT_NAME})
-
-# if(BUILD_TESTING)
-#   find_package(ament_lint_auto REQUIRED)
-#   ament_lint_auto_find_test_dependencies()
-# endif()
 
 ament_package()
