@@ -32,8 +32,6 @@ namespace ignition_platform
 
     public:
         std::shared_ptr<ignition::transport::Node> ign_node_ptr_;
-
-        ignition::msgs::Twist ign_msg_;
         ignition::transport::v11::Node::Publisher command_twist_pub_;
         
     private:

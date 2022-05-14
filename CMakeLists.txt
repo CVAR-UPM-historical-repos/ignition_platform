@@ -9,22 +9,47 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 # find dependencies
-find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(nav_msgs REQUIRED)
-find_package(as2_core REQUIRED)
-find_package(as2_msgs REQUIRED)
-find_package(std_srvs REQUIRED)
-find_package(image_transport REQUIRED)
+# find_package(ament_cmake REQUIRED)
+# find_package(rclcpp REQUIRED)
+# find_package(std_msgs REQUIRED)
+# find_package(sensor_msgs REQUIRED)
+# find_package(geometry_msgs REQUIRED)
+# find_package(nav_msgs REQUIRED)
+# find_package(as2_core REQUIRED)
+# find_package(as2_msgs REQUIRED)
+# find_package(std_srvs REQUIRED)
+# find_package(image_transport REQUIRED)
 
-find_package(ignition-transport11 REQUIRED)
-find_package(ignition-msgs8 REQUIRED)
-find_package(ros_ign_bridge REQUIRED)
-find_package(ros_ign_gazebo REQUIRED)
+# find_package(ignition-transport11 REQUIRED)
+# find_package(ignition-msgs8 REQUIRED)
+# find_package(ros_ign_bridge REQUIRED)
+# find_package(ros_ign_gazebo REQUIRED)
 
+
+set(PROJECT_DEPENDENCIES
+  ament_cmake
+  rclcpp
+  std_msgs
+  sensor_msgs
+  geometry_msgs
+  trajectory_msgs
+  nav_msgs
+  Eigen3
+  pluginlib
+  as2_core
+  as2_msgs
+  std_srvs
+  image_transport
+  ignition-transport11
+  ignition-msgs8
+  ros_ign_bridge
+  ros_ign_gazebo
+  tf2
+)
+
+foreach(DEPENDENCY ${PROJECT_DEPENDENCIES})
+  find_package(${DEPENDENCY} REQUIRED)
+endforeach()
 
 
 # uncomment the following section in order to fill in
@@ -42,6 +67,7 @@ set(HEADER_HPP_FILES
 include_directories(
   include
   include/${PROJECT_NAME}
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
 add_executable(${PROJECT_NAME}_node src/${NODE_NAME}_main.cpp ${SOURCE_CPP_FILES} ${HEADER_HPP_FILES})

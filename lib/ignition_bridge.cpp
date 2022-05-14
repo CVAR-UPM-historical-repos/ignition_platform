@@ -50,8 +50,9 @@ namespace ignition_platform
 
     void IgnitionBridge::sendTwistMsg(const geometry_msgs::msg::Twist &ros_twist_msg)
     {
-        ros_ign_bridge::convert_ros_to_ign(ros_twist_msg, ign_msg_);
-        command_twist_pub_.Publish(ign_msg_);
+        ignition::msgs::Twist ign_twist_msg;
+        ros_ign_bridge::convert_ros_to_ign(ros_twist_msg, ign_twist_msg);
+        command_twist_pub_.Publish(ign_twist_msg);
         return;
     };
 
@@ -78,6 +79,8 @@ namespace ignition_platform
     void IgnitionBridge::ignitionOdometryCallback(const ignition::msgs::Odometry &msg)
     {
         nav_msgs::msg::Odometry odom_msg;
+        // msg.pose().orientation().w();
+        // std::cout << msg.pose().orientation().w() << std::endl;
         ros_ign_bridge::convert_ign_to_ros(msg, odom_msg);
         odometryCallback_(odom_msg);
         return;

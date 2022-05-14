@@ -48,3 +48,8 @@ twist:
     z: 0.0" 
 
 ros2 run rqt_image_view rqt_image_view
+
+
+ign topic -e -t /drone_sim_rafa_0/cmd_vel
+
+ign topic -t "/drone_sim_rafa_0/cmd_vel" -m ignition.msgs.Twist -p "linear: {x:0 y: 0 z: 0.1} angular {z: 0}"
