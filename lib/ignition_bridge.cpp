@@ -40,11 +40,15 @@ namespace ignition_platform
 {
     poseCallbackType IgnitionBridge::poseCallback_ = [](const geometry_msgs::msg::PoseStamped &msg){};
     odometryCallbackType IgnitionBridge::odometryCallback_ = [](const nav_msgs::msg::Odometry &msg){};
-    cameraCallbackType IgnitionBridge::cameraCallback_ = [](const sensor_msgs::msg::Image &msg){};
-    cameraInfoCallbackType IgnitionBridge::cameraInfoCallback_ = [](const sensor_msgs::msg::CameraInfo &msg){};
+
+    std::unordered_map<std::string, cameraCallbackType> IgnitionBridge::callbacks_camera_ = {};
+    std::unordered_map<std::string, cameraInfoCallbackType> IgnitionBridge::callbacks_camera_info_ = {};
+
 
     IgnitionBridge::IgnitionBridge(std::string name_space)
     {
+        name_space_ = name_space;
+
         // Initialize the ignition node
         ign_node_ptr_ = std::make_shared<ignition::transport::Node>();
 
@@ -53,33 +57,13 @@ namespace ignition_platform
             name_space + ign_topic_command_twist_);
 
         // Initialize subscribers
-        if (!ign_node_ptr_->Subscribe(
+        ign_node_ptr_->Subscribe(
                 "model" + name_space + ign_topic_sensor_pose_,
-                IgnitionBridge::ignitionPoseCallback))
-        {
-            std::cout << "Failed to subscribe to " << "model" + name_space + ign_topic_sensor_pose_ << std::endl;
-        }
+                IgnitionBridge::ignitionPoseCallback);
 
-        if (!ign_node_ptr_->Subscribe(
+        ign_node_ptr_->Subscribe(
                 "model" + name_space + ign_topic_sensor_odometry_, 
-                IgnitionBridge::ignitionOdometryCallback))
-        {
-            std::cout << "Failed to subscribe to " << "model" + name_space + ign_topic_sensor_odometry_ << std::endl;
-        }
-
-        if (!ign_node_ptr_->Subscribe(
-                name_space + ign_topic_sensor_camera_,
-                IgnitionBridge::ignitionCameraCallback))
-        {
-            std::cout << "Failed to subscribe to " << name_space + ign_topic_sensor_camera_ << std::endl;
-        }
-        
-        if (!ign_node_ptr_->Subscribe(
-                name_space + ign_topic_sensor_camera_info_,
-                IgnitionBridge::ignitionCameraInfoCallback))
-        {
-            std::cout << "Failed to subscribe to " << name_space + ign_topic_sensor_camera_info_ << std::endl;
-        }
+                IgnitionBridge::ignitionOdometryCallback);
 
         return;
     };
@@ -122,31 +106,58 @@ namespace ignition_platform
         return;
     };
 
-    void IgnitionBridge::setCameraCallback(cameraCallbackType callback)
+    // Cameras
+    void IgnitionBridge::addSensor(
+        std::string world_name,
+        std::string sensor_name,
+        std::string link_name,
+        std::string sensor_type,
+        cameraCallbackType cameraCallback,
+        cameraInfoCallbackType cameraInfoCallback)
     {
-        cameraCallback_ = callback;
+        std::string camera_topic = "/world/" + world_name + "/model/" + name_space_ + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/image";
+        callbacks_camera_.insert(std::make_pair(camera_topic, cameraCallback));
+
+        ign_node_ptr_->Subscribe(
+            camera_topic,
+            IgnitionBridge::ignitionCameraCallback);
+
+
+        std::string camera_info_topic = "/world/" + world_name + "/model/" + name_space_ + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/image";
+        callbacks_camera_info_.insert(std::make_pair(camera_info_topic, cameraInfoCallback));
+        ign_node_ptr_->Subscribe(
+            camera_info_topic,
+            IgnitionBridge::ignitionCameraInfoCallback);
+
         return;
     };
 
-    void IgnitionBridge::ignitionCameraCallback(const ignition::msgs::Image &msg)
+    void IgnitionBridge::ignitionCameraCallback(
+        const ignition::msgs::Image &msg, 
+        const ignition::transport::MessageInfo &msg_info)
     {
         sensor_msgs::msg::Image ros_image_msg;
         ros_ign_bridge::convert_ign_to_ros(msg, ros_image_msg);
-        cameraCallback_(ros_image_msg);
+        auto callback = callbacks_camera_.find(msg_info.Topic());
+        if (callback != callbacks_camera_.end())
+        {
+            callback->second(ros_image_msg);
+        }
         return;
     };
 
-    void IgnitionBridge::setCameraInfoCallback(cameraInfoCallbackType callback)
-    {
-        cameraInfoCallback_ = callback;
-        return;
-    };
-
-    void IgnitionBridge::ignitionCameraInfoCallback(const ignition::msgs::CameraInfo &msg)
+    void IgnitionBridge::ignitionCameraInfoCallback(
+        const ignition::msgs::CameraInfo &msg, 
+        const ignition::transport::MessageInfo &msg_info)
     {
         sensor_msgs::msg::CameraInfo ros_camera_info_msg;
         ros_ign_bridge::convert_ign_to_ros(msg, ros_camera_info_msg);
-        cameraInfoCallback_(ros_camera_info_msg);
+        auto callback = callbacks_camera_info_.find(msg_info.Topic());
+        if (callback != callbacks_camera_info_.end())
+        {
+            callback->second(ros_camera_info_msg);
+        }
         return;
     };
+
 }

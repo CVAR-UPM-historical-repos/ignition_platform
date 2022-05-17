@@ -47,11 +47,12 @@ namespace ignition_platform
 
     IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform()
     {
-        this->declare_parameter("sensors");
-        RCLCPP_INFO(this->get_logger(), "%s", this->get_parameter("sensors").as_string().c_str());
-
         ignition_bridge_ = std::make_shared<IgnitionBridge>(this->get_namespace());
         this->configureSensors();
+
+        this->declare_parameter("sensors");
+        static auto parameters_callback_handle_ = this->add_on_set_parameters_callback(
+            std::bind(&IgnitionPlatform::parametersCallback, this, std::placeholders::_1));
 
         // Timer to send command
         static auto timer_commands_ =
@@ -69,11 +70,11 @@ namespace ignition_platform
             std::make_unique<as2::sensors::Sensor<nav_msgs::msg::Odometry>>("odometry", this);
         ignition_bridge_->setOdometryCallback(odometryCallback);
 
-        IgnitionPlatform::camera_info_received_ = false;
-        camera_ptr_ =
-            std::make_unique<as2::sensors::Camera>("image", this);
-        ignition_bridge_->setCameraCallback(cameraCallback);
-        ignition_bridge_->setCameraInfoCallback(cameraInfoCallback);
+        // IgnitionPlatform::camera_info_received_ = false;
+        // camera_ptr_ =
+        //     std::make_unique<as2::sensors::Camera>("image", this);
+        // ignition_bridge_->setCameraCallback(cameraCallback);
+        // ignition_bridge_->setCameraInfoCallback(cameraInfoCallback);
 
         return;
     };
@@ -91,7 +92,7 @@ namespace ignition_platform
             if (command_twist_msg_.twist.angular.z > yaw_rate_limit_)
             {
                 command_twist_msg_.twist.angular.z = yaw_rate_limit_;
-            } 
+            }
             else if (command_twist_msg_.twist.angular.z < -yaw_rate_limit_)
             {
                 command_twist_msg_.twist.angular.z = -yaw_rate_limit_;
@@ -135,9 +136,51 @@ namespace ignition_platform
             resetCommandTwistMsg();
             return true;
         }
-        
+
         RCLCPP_WARN(this->get_logger(), "IgnitionPlatform::ownSetPlatformControlMode() - unsupported control mode");
         return false;
+    };
+
+    std::vector<std::string> split(const std::string &s, char delim)
+    {
+        std::vector<std::string> elems;
+        std::stringstream ss(s);
+        std::string item;
+        while (std::getline(ss, item, delim))
+        {
+            elems.push_back(item);
+        }
+        return elems;
+    };
+
+    rcl_interfaces::msg::SetParametersResult IgnitionPlatform::parametersCallback(const std::vector<rclcpp::Parameter> &parameters)
+    {
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
+        result.reason = "success";
+
+        for (auto &param : parameters)
+        {
+            if (param.get_name() == "sensors")
+            {
+                std::string sensors_str = param.get_value<std::string>();
+                std::vector<std::string> sensors_str_vec = split(sensors_str, ',');
+                // TODO: process sensors_str_vec
+                // for (auto &sensor_str : sensors_str_vec)
+                // {
+                //     if (sensor_str == "image")
+                //     {
+                //         camera_ptr_->set_active(true);
+                //     }
+                //     else
+                //     {
+                //         RCLCPP_WARN(this->get_logger(), "IgnitionPlatform::parametersCallback() - unknown sensor: %s", sensor_str.c_str());
+                //     }
+                // }
+                
+            }
+        }
+        return result;
     };
 
     void IgnitionPlatform::resetCommandTwistMsg()
@@ -168,7 +211,7 @@ namespace ignition_platform
             odom_msg.pose.pose.orientation.y,
             odom_msg.pose.pose.orientation.z,
             odom_msg.pose.pose.orientation.w);
-        
+
         tf2::Matrix3x3 m(q);
         double roll, pitch, yaw;
         m.getRPY(roll, pitch, yaw);
@@ -203,8 +246,7 @@ namespace ignition_platform
     {
         // Convert from ENU to FLU
         Eigen::Matrix3d R_FLU;
-        R_FLU << 
-            cos(yaw_angle), sin(yaw_angle), 0,
+        R_FLU << cos(yaw_angle), sin(yaw_angle), 0,
             -sin(yaw_angle), cos(yaw_angle), 0,
             0, 0, 1;
 

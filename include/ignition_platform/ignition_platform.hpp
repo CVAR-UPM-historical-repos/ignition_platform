@@ -40,6 +40,8 @@
 #include <memory>
 #include <string>
 #include <iostream>
+#include <memory>
+#include <rclcpp/logging.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/src/Core/Matrix.h>
@@ -88,6 +90,9 @@ namespace ignition_platform
         static void cameraCallback(const sensor_msgs::msg::Image &msg);
         static void cameraInfoCallback(const sensor_msgs::msg::CameraInfo &msg);
 
+        rcl_interfaces::msg::SetParametersResult parametersCallback(const std::vector<rclcpp::Parameter> &parameters);
+
+
     private:
         std::shared_ptr<IgnitionBridge> ignition_bridge_;
         static bool camera_info_received_;
@@ -95,6 +100,8 @@ namespace ignition_platform
         as2_msgs::msg::ControlMode control_in_;
         static double yaw_;
         double yaw_rate_limit_ = M_PI_2;
+
+        bool drone_configuration_received_ = false;
 
     private:
         void resetCommandTwistMsg();

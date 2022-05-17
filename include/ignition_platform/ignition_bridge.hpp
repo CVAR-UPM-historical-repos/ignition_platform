@@ -1,6 +1,6 @@
 /*!*******************************************************************************************
  *  \file       ignition_bridge.hpp
- *  \brief      Implementation of an Ignition Gazebo bridge to ROS 
+ *  \brief      Implementation of an Ignition Gazebo bridge to ROS
  *  \authors    Miguel Fernández Cortizas
  *              Pedro Arias Pérez
  *              David Pérez Saura
@@ -41,6 +41,7 @@
 #include <string>
 #include <iostream>
 
+#include <unordered_map>
 #include <as2_core/sensor.hpp>
 #include <as2_core/names/topics.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -67,35 +68,39 @@ namespace ignition_platform
     public:
         std::shared_ptr<ignition::transport::Node> ign_node_ptr_;
         ignition::transport::v11::Node::Publisher command_twist_pub_;
-        
-    private:
-        const std::string &ign_topic_command_twist_ = "/cmd_vel";
 
+    private:
+        std::string name_space_;
+
+        const std::string &ign_topic_command_twist_ = "/cmd_vel";
         const std::string &ign_topic_sensor_pose_ = "/pose";
         const std::string &ign_topic_sensor_odometry_ = "/odometry";
-        const std::string &ign_topic_sensor_camera_ = "/camera";
-        const std::string &ign_topic_sensor_camera_info_ = "/camera_info";
 
     public:
         void sendTwistMsg(const geometry_msgs::msg::Twist &msg);
+
         void setPoseCallback(poseCallbackType callback);
         void setOdometryCallback(odometryCallbackType callback);
-        void setCameraCallback(cameraCallbackType callback);
-        void setCameraInfoCallback(cameraInfoCallbackType callback);
+
+        void addSensor(
+            std::string world_name,
+            std::string sensor_name,
+            std::string link_name,
+            std::string sensor_type,
+            cameraCallbackType cameraCallback,
+            cameraInfoCallbackType cameraInfoCallback);
 
     private:
+        // Ignition callbacks
         static poseCallbackType poseCallback_;
         static void ignitionPoseCallback(const ignition::msgs::Pose &msg);
-
         static odometryCallbackType odometryCallback_;
         static void ignitionOdometryCallback(const ignition::msgs::Odometry &msg);
 
-        static cameraCallbackType cameraCallback_;
-        static void ignitionCameraCallback(const ignition::msgs::Image &msg);
-
-        static cameraInfoCallbackType cameraInfoCallback_;
-        static void ignitionCameraInfoCallback(const ignition::msgs::CameraInfo &msg);
-        
+        static void ignitionCameraCallback(const ignition::msgs::Image &msg, const ignition::transport::MessageInfo &_info);
+        static std::unordered_map<std::string, cameraCallbackType> callbacks_camera_;
+        static void ignitionCameraInfoCallback(const ignition::msgs::CameraInfo &msg, const ignition::transport::MessageInfo &_info);
+        static std::unordered_map<std::string, cameraInfoCallbackType> callbacks_camera_info_;
     };
 }
 
