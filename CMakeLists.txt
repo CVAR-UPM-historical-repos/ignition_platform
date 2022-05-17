@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 set(PROJECT_NAME ignition_platform)
 set(NODE_NAME ignition_platform)
-project(${PROJECT_NAME})
+project(${PROJECT_NAME} VERSION 0.1.0)
 
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
@@ -27,8 +27,6 @@ set(PROJECT_DEPENDENCIES
   as2_msgs
   std_srvs
   image_transport
-  ignition-transport11
-  ignition-msgs8
   ros_ign_bridge
   ros_ign_gazebo
   tf2
@@ -37,6 +35,34 @@ set(PROJECT_DEPENDENCIES
 foreach(DEPENDENCY ${PROJECT_DEPENDENCIES})
   find_package(${DEPENDENCY} REQUIRED)
 endforeach()
+
+# Citadel and foxy
+if("$ENV{IGNITION_VERSION}" STREQUAL "citadel" AND "$ENV{ROS_DISTRO}" STREQUAL "foxy")
+  find_package(ignition-gazebo3 REQUIRED)
+  set(IGN_GAZEBO_VER ${ignition-gazebo3_VERSION_MAJOR})
+
+  find_package(ignition-transport8 REQUIRED)
+  set(IGN_TRANSPORT_VER ${ignition-transport8_VERSION_MAJOR})
+
+  find_package(ignition-msgs5 REQUIRED)
+  set(IGN_MSGS_VER ${ignition-msgs5_VERSION_MAJOR})
+
+  message(STATUS "Compiling against Ignition Citadel")
+  add_definitions(-DIGNITION_CITADEL)
+# Fortress and galactic or Fortress and foxy
+else()
+  find_package(ignition-gazebo6 REQUIRED)
+  set(IGN_GAZEBO_VER ${ignition-gazebo6_VERSION_MAJOR})
+
+  find_package(ignition-transport11 REQUIRED)
+  set(IGN_TRANSPORT_VER ${ignition-transport11_VERSION_MAJOR})
+
+  find_package(ignition-msgs8 REQUIRED)
+  set(IGN_MSGS_VER ${ignition-msgs8_VERSION_MAJOR})
+
+  message(STATUS "Compiling against Ignition Fortress")
+  add_definitions(-DIGNITION_FORTRESS)
+endif()
 
 set(SOURCE_CPP_FILES 
   lib/${NODE_NAME}.cpp
@@ -64,11 +90,23 @@ ament_target_dependencies(${PROJECT_NAME}_node
   as2_msgs
   geometry_msgs
   image_transport
-  ignition-transport11
-  ignition-msgs8
   ros_ign_bridge
   ros_ign_gazebo
 )
+
+if("$ENV{IGNITION_VERSION}" STREQUAL "citadel" AND "$ENV{ROS_DISTRO}" STREQUAL "foxy")
+  ament_target_dependencies(${PROJECT_NAME}_node 
+    ignition-transport8
+    ignition-msgs5
+  )
+
+else()
+  ament_target_dependencies(${PROJECT_NAME}_node 
+    ignition-transport11
+    ignition-msgs8
+  )
+
+endif()
 
 if(BUILD_TESTING)
   find_package(ament_cmake_cpplint REQUIRED)
