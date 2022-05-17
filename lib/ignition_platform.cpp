@@ -47,6 +47,9 @@ namespace ignition_platform
 
     IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform()
     {
+        this->declare_parameter("sensors");
+        RCLCPP_INFO(this->get_logger(), "%s", this->get_parameter("sensors").as_string().c_str());
+
         ignition_bridge_ = std::make_shared<IgnitionBridge>(this->get_namespace());
         this->configureSensors();
 
