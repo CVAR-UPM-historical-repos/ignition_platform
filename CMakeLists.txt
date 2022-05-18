@@ -19,14 +19,10 @@ set(PROJECT_DEPENDENCIES
   std_msgs
   sensor_msgs
   geometry_msgs
-  trajectory_msgs
   nav_msgs
   Eigen3
   pluginlib
   as2_core
-  as2_msgs
-  std_srvs
-  image_transport
   ros_ign_bridge
   ros_ign_gazebo
   tf2

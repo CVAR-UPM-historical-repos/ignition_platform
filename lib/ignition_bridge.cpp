@@ -41,6 +41,7 @@ namespace ignition_platform
     poseCallbackType IgnitionBridge::poseCallback_ = [](const geometry_msgs::msg::PoseStamped &msg){};
     odometryCallbackType IgnitionBridge::odometryCallback_ = [](const nav_msgs::msg::Odometry &msg){};
 
+    std::unordered_map<std::string, std::string> IgnitionBridge::callbacks_sensors_names_ = {};
     std::unordered_map<std::string, cameraCallbackType> IgnitionBridge::callbacks_camera_ = {};
     std::unordered_map<std::string, cameraInfoCallbackType> IgnitionBridge::callbacks_camera_info_ = {};
 
@@ -99,8 +100,6 @@ namespace ignition_platform
     void IgnitionBridge::ignitionOdometryCallback(const ignition::msgs::Odometry &msg)
     {
         nav_msgs::msg::Odometry odom_msg;
-        // msg.pose().orientation().w();
-        // std::cout << msg.pose().orientation().w() << std::endl;
         ros_ign_bridge::convert_ign_to_ros(msg, odom_msg);
         odometryCallback_(odom_msg);
         return;
@@ -109,26 +108,27 @@ namespace ignition_platform
     // Cameras
     void IgnitionBridge::addSensor(
         std::string world_name,
+        std::string name_space,
         std::string sensor_name,
         std::string link_name,
         std::string sensor_type,
         cameraCallbackType cameraCallback,
         cameraInfoCallbackType cameraInfoCallback)
     {
-        std::string camera_topic = "/world/" + world_name + "/model/" + name_space_ + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/image";
+        std::string camera_topic = "/world/" + world_name + "/model/" + name_space + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/image";
         callbacks_camera_.insert(std::make_pair(camera_topic, cameraCallback));
-
+        callbacks_sensors_names_.insert(std::make_pair(camera_topic, sensor_name));
         ign_node_ptr_->Subscribe(
             camera_topic,
             IgnitionBridge::ignitionCameraCallback);
 
 
-        std::string camera_info_topic = "/world/" + world_name + "/model/" + name_space_ + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/image";
+        std::string camera_info_topic = "/world/" + world_name + "/model/" + name_space + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/image";
         callbacks_camera_info_.insert(std::make_pair(camera_info_topic, cameraInfoCallback));
+        callbacks_sensors_names_.insert(std::make_pair(camera_info_topic, sensor_name));
         ign_node_ptr_->Subscribe(
             camera_info_topic,
             IgnitionBridge::ignitionCameraInfoCallback);
-
         return;
     };
 
@@ -139,9 +139,10 @@ namespace ignition_platform
         sensor_msgs::msg::Image ros_image_msg;
         ros_ign_bridge::convert_ign_to_ros(msg, ros_image_msg);
         auto callback = callbacks_camera_.find(msg_info.Topic());
+        auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
         if (callback != callbacks_camera_.end())
         {
-            callback->second(ros_image_msg);
+            callback->second(ros_image_msg, sensor_name->second);
         }
         return;
     };
@@ -153,9 +154,10 @@ namespace ignition_platform
         sensor_msgs::msg::CameraInfo ros_camera_info_msg;
         ros_ign_bridge::convert_ign_to_ros(msg, ros_camera_info_msg);
         auto callback = callbacks_camera_info_.find(msg_info.Topic());
+        auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
         if (callback != callbacks_camera_info_.end())
         {
-            callback->second(ros_camera_info_msg);
+            callback->second(ros_camera_info_msg, sensor_name->second);
         }
         return;
     };

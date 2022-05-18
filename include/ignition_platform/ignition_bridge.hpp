@@ -56,8 +56,9 @@ namespace ignition_platform
 {
     typedef void (*poseCallbackType)(const geometry_msgs::msg::PoseStamped &msg);
     typedef void (*odometryCallbackType)(const nav_msgs::msg::Odometry &msg);
-    typedef void (*cameraCallbackType)(const sensor_msgs::msg::Image &msg);
-    typedef void (*cameraInfoCallbackType)(const sensor_msgs::msg::CameraInfo &msg);
+
+    typedef void (*cameraCallbackType)(const sensor_msgs::msg::Image &msg, const std::string &sensor_name);
+    typedef void (*cameraInfoCallbackType)(const sensor_msgs::msg::CameraInfo &msg, const std::string &sensor_name);
 
     class IgnitionBridge
     {
@@ -84,6 +85,7 @@ namespace ignition_platform
 
         void addSensor(
             std::string world_name,
+            std::string name_space,
             std::string sensor_name,
             std::string link_name,
             std::string sensor_type,
@@ -97,7 +99,11 @@ namespace ignition_platform
         static odometryCallbackType odometryCallback_;
         static void ignitionOdometryCallback(const ignition::msgs::Odometry &msg);
 
+
+        static std::unordered_map<std::string, std::string> callbacks_sensors_names_;
+
         static void ignitionCameraCallback(const ignition::msgs::Image &msg, const ignition::transport::MessageInfo &_info);
+        // static std::unordered_map<std::pair<std::string, std::string>, cameraCallbackType> callbacks_camera_;
         static std::unordered_map<std::string, cameraCallbackType> callbacks_camera_;
         static void ignitionCameraInfoCallback(const ignition::msgs::CameraInfo &msg, const ignition::transport::MessageInfo &_info);
         static std::unordered_map<std::string, cameraInfoCallbackType> callbacks_camera_info_;

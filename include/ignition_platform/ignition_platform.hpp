@@ -43,6 +43,7 @@
 #include <memory>
 #include <rclcpp/logging.hpp>
 
+#include <unordered_map>
 #include <Eigen/Dense>
 #include <Eigen/src/Core/Matrix.h>
 #include <math.h>
@@ -86,22 +87,16 @@ namespace ignition_platform
         static std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> odometry_raw_estimation_ptr_;
         static void odometryCallback(const nav_msgs::msg::Odometry &msg);
 
-        static std::unique_ptr<as2::sensors::Camera> camera_ptr_;
-        static void cameraCallback(const sensor_msgs::msg::Image &msg);
-        static void cameraInfoCallback(const sensor_msgs::msg::CameraInfo &msg);
-
-        rcl_interfaces::msg::SetParametersResult parametersCallback(const std::vector<rclcpp::Parameter> &parameters);
-
+        static std::unordered_map<std::string, as2::sensors::Camera> callbacks_camera_;
+        static void cameraCallback(const sensor_msgs::msg::Image &msg, const std::string &sensor_name);
+        static void cameraInfoCallback(const sensor_msgs::msg::CameraInfo &msg, const std::string &sensor_name);
 
     private:
         std::shared_ptr<IgnitionBridge> ignition_bridge_;
-        static bool camera_info_received_;
         static bool odometry_info_received_;
         as2_msgs::msg::ControlMode control_in_;
         static double yaw_;
         double yaw_rate_limit_ = M_PI_2;
-
-        bool drone_configuration_received_ = false;
 
     private:
         void resetCommandTwistMsg();

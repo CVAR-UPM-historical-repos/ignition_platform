@@ -38,26 +38,37 @@
 
 namespace ignition_platform
 {
-    std::unique_ptr<as2::sensors::Sensor<geometry_msgs::msg::PoseStamped>> IgnitionPlatform::pose_ptr_ = nullptr;
-    std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> IgnitionPlatform::odometry_raw_estimation_ptr_ = nullptr;
-    std::unique_ptr<as2::sensors::Camera> IgnitionPlatform::camera_ptr_ = nullptr;
-    bool IgnitionPlatform::camera_info_received_ = false;
     bool IgnitionPlatform::odometry_info_received_ = false;
     double IgnitionPlatform::yaw_ = 0.0;
 
+    std::unique_ptr<as2::sensors::Sensor<geometry_msgs::msg::PoseStamped>> IgnitionPlatform::pose_ptr_ = nullptr;
+    std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> IgnitionPlatform::odometry_raw_estimation_ptr_ = nullptr;
+
+    std::unordered_map<std::string, as2::sensors::Camera> IgnitionPlatform::callbacks_camera_ = {};
+
     IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform()
     {
-        ignition_bridge_ = std::make_shared<IgnitionBridge>(this->get_namespace());
-        this->configureSensors();
-
         this->declare_parameter("sensors");
-        static auto parameters_callback_handle_ = this->add_on_set_parameters_callback(
-            std::bind(&IgnitionPlatform::parametersCallback, this, std::placeholders::_1));
+        ignition_bridge_ = std::make_shared<IgnitionBridge>(this->get_namespace());
+
+        this->configureSensors();
 
         // Timer to send command
         static auto timer_commands_ =
             this->create_wall_timer(std::chrono::milliseconds(CMD_FREQ), [this]()
                                     { this->sendCommand(); });
+    };
+
+    std::vector<std::string> split(const std::string &s, char delim)
+    {
+        std::vector<std::string> elems;
+        std::stringstream ss(s);
+        std::string item;
+        while (std::getline(ss, item, delim))
+        {
+            elems.push_back(item);
+        }
+        return elems;
     };
 
     void IgnitionPlatform::configureSensors()
@@ -70,11 +81,42 @@ namespace ignition_platform
             std::make_unique<as2::sensors::Sensor<nav_msgs::msg::Odometry>>("odometry", this);
         ignition_bridge_->setOdometryCallback(odometryCallback);
 
-        // IgnitionPlatform::camera_info_received_ = false;
-        // camera_ptr_ =
-        //     std::make_unique<as2::sensors::Camera>("image", this);
-        // ignition_bridge_->setCameraCallback(cameraCallback);
-        // ignition_bridge_->setCameraInfoCallback(cameraInfoCallback);
+        std::string sensors_param = this->get_parameter("sensors").as_string();
+        std::vector<std::string> sensor_config_list = split(sensors_param, ':');
+
+        for (auto sensor_config : sensor_config_list)
+        {
+            std::vector<std::string> sensor_config_params = split(sensor_config, ',');
+
+            if (sensor_config_params.size() != 5)
+            {
+                RCLCPP_ERROR_ONCE(this->get_logger(), "Wrong sensor configuration: %s",
+                             sensor_config.c_str());
+                continue;
+            }
+
+            std::string sensor_type = sensor_config_params[4];
+            if (sensor_type == "camera")
+            {
+                as2::sensors::Camera camera = as2::sensors::Camera(sensor_config_params[2], this);
+
+                callbacks_camera_.insert(std::make_pair(sensor_config_params[2],
+                                                        camera));
+
+                ignition_bridge_->addSensor(
+                    sensor_config_params[0],
+                    sensor_config_params[1],
+                    sensor_config_params[2],
+                    sensor_config_params[3],
+                    sensor_config_params[4],
+                    cameraCallback,
+                    cameraInfoCallback);
+            }
+            else
+            {
+                RCLCPP_WARN(this->get_logger(), "Sensor type not supported: %s", sensor_type.c_str());
+            }
+        }
 
         return;
     };
@@ -141,48 +183,6 @@ namespace ignition_platform
         return false;
     };
 
-    std::vector<std::string> split(const std::string &s, char delim)
-    {
-        std::vector<std::string> elems;
-        std::stringstream ss(s);
-        std::string item;
-        while (std::getline(ss, item, delim))
-        {
-            elems.push_back(item);
-        }
-        return elems;
-    };
-
-    rcl_interfaces::msg::SetParametersResult IgnitionPlatform::parametersCallback(const std::vector<rclcpp::Parameter> &parameters)
-    {
-        rcl_interfaces::msg::SetParametersResult result;
-        result.successful = true;
-        result.reason = "success";
-
-        for (auto &param : parameters)
-        {
-            if (param.get_name() == "sensors")
-            {
-                std::string sensors_str = param.get_value<std::string>();
-                std::vector<std::string> sensors_str_vec = split(sensors_str, ',');
-                // TODO: process sensors_str_vec
-                // for (auto &sensor_str : sensors_str_vec)
-                // {
-                //     if (sensor_str == "image")
-                //     {
-                //         camera_ptr_->set_active(true);
-                //     }
-                //     else
-                //     {
-                //         RCLCPP_WARN(this->get_logger(), "IgnitionPlatform::parametersCallback() - unknown sensor: %s", sensor_str.c_str());
-                //     }
-                // }
-                
-            }
-        }
-        return result;
-    };
-
     void IgnitionPlatform::resetCommandTwistMsg()
     {
         geometry_msgs::msg::Twist twist_msg;
@@ -221,21 +221,19 @@ namespace ignition_platform
         return;
     };
 
-    void IgnitionPlatform::cameraCallback(const sensor_msgs::msg::Image &image_msg)
+    void IgnitionPlatform::cameraCallback(
+        const sensor_msgs::msg::Image &image_msg,
+        const std::string &sensor_name)
     {
-        camera_ptr_->updateData(image_msg);
+        (callbacks_camera_.find(sensor_name)->second).updateData(image_msg);
         return;
     };
 
-    void IgnitionPlatform::cameraInfoCallback(const sensor_msgs::msg::CameraInfo &info_msg)
+    void IgnitionPlatform::cameraInfoCallback(
+        const sensor_msgs::msg::CameraInfo &info_msg,
+        const std::string &sensor_name)
     {
-        if (IgnitionPlatform::camera_info_received_)
-        {
-            return;
-        }
-        // camera_ptr_->setParameters(info_msg);
-        IgnitionPlatform::camera_info_received_ = true;
-        // camera_info_ptr_->updateData(info_msg);
+        (callbacks_camera_.find(sensor_name)->second).setParameters(info_msg);
         return;
     };
 
