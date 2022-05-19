@@ -54,8 +54,8 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
-#include <image_transport/image_transport.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <image_transport/image_transport.hpp>
 
 #include "ignition_bridge.hpp"
 
@@ -90,6 +90,13 @@ namespace ignition_platform
         static std::unordered_map<std::string, as2::sensors::Camera> callbacks_camera_;
         static void cameraCallback(const sensor_msgs::msg::Image &msg, const std::string &sensor_name);
         static void cameraInfoCallback(const sensor_msgs::msg::CameraInfo &msg, const std::string &sensor_name);
+
+        static std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::LaserScan>> callbacks_laser_scan_;
+        static void laserScanCallback(const sensor_msgs::msg::LaserScan &msg, const std::string &sensor_name);
+
+        static std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::PointCloud2>> callbacks_point_cloud_;
+        static void pointCloudCallback(const sensor_msgs::msg::PointCloud2 &msg, const std::string &sensor_name);
+
 
     private:
         std::shared_ptr<IgnitionBridge> ignition_bridge_;

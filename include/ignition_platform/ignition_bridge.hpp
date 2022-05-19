@@ -60,6 +60,9 @@ namespace ignition_platform
     typedef void (*cameraCallbackType)(const sensor_msgs::msg::Image &msg, const std::string &sensor_name);
     typedef void (*cameraInfoCallbackType)(const sensor_msgs::msg::CameraInfo &msg, const std::string &sensor_name);
 
+    typedef void (*laserScanCallbackType)(const sensor_msgs::msg::LaserScan &msg, const std::string &sensor_name);
+    typedef void (*pointCloudCallbackType)(const sensor_msgs::msg::PointCloud2 &msg, const std::string &sensor_name);
+
     class IgnitionBridge
     {
     public:
@@ -92,6 +95,15 @@ namespace ignition_platform
             cameraCallbackType cameraCallback,
             cameraInfoCallbackType cameraInfoCallback);
 
+        void addSensor(
+            std::string world_name,
+            std::string name_space,
+            std::string sensor_name,
+            std::string link_name,
+            std::string sensor_type,
+            laserScanCallbackType laserScanCallback,
+            pointCloudCallbackType pointCloudCallback);
+
     private:
         // Ignition callbacks
         static poseCallbackType poseCallback_;
@@ -103,10 +115,14 @@ namespace ignition_platform
         static std::unordered_map<std::string, std::string> callbacks_sensors_names_;
 
         static void ignitionCameraCallback(const ignition::msgs::Image &msg, const ignition::transport::MessageInfo &_info);
-        // static std::unordered_map<std::pair<std::string, std::string>, cameraCallbackType> callbacks_camera_;
         static std::unordered_map<std::string, cameraCallbackType> callbacks_camera_;
         static void ignitionCameraInfoCallback(const ignition::msgs::CameraInfo &msg, const ignition::transport::MessageInfo &_info);
         static std::unordered_map<std::string, cameraInfoCallbackType> callbacks_camera_info_;
+
+        static void ignitionLaserScanCallback(const ignition::msgs::LaserScan &msg, const ignition::transport::MessageInfo &_info);
+        static std::unordered_map<std::string, laserScanCallbackType> callbacks_laser_scan_;
+        static void ignitionPointCloudCallback(const ignition::msgs::PointCloudPacked &msg, const ignition::transport::MessageInfo &_info);
+        static std::unordered_map<std::string, pointCloudCallbackType> callbacks_point_cloud_;
     };
 }
 

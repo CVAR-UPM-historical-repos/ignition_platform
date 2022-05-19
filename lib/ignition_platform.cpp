@@ -45,7 +45,9 @@ namespace ignition_platform
     std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> IgnitionPlatform::odometry_raw_estimation_ptr_ = nullptr;
 
     std::unordered_map<std::string, as2::sensors::Camera> IgnitionPlatform::callbacks_camera_ = {};
-
+    std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::LaserScan>> IgnitionPlatform::callbacks_laser_scan_ = {};
+    std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::PointCloud2>> IgnitionPlatform::callbacks_point_cloud_ = {};
+        
     IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform()
     {
         this->declare_parameter("sensors");
@@ -99,7 +101,6 @@ namespace ignition_platform
             if (sensor_type == "camera")
             {
                 as2::sensors::Camera camera = as2::sensors::Camera(sensor_config_params[2], this);
-
                 callbacks_camera_.insert(std::make_pair(sensor_config_params[2],
                                                         camera));
 
@@ -111,6 +112,23 @@ namespace ignition_platform
                     sensor_config_params[4],
                     cameraCallback,
                     cameraInfoCallback);
+            }
+            else if (sensor_type == "lidar")
+            {
+                as2::sensors::Sensor<sensor_msgs::msg::LaserScan> laser_scan_sensor(sensor_config_params[2], this);
+                as2::sensors::Sensor<sensor_msgs::msg::PointCloud2> point_cloud_sensor(sensor_config_params[2] + "/points", this);
+
+                callbacks_laser_scan_.insert(std::make_pair(sensor_config_params[2], laser_scan_sensor));
+                callbacks_point_cloud_.insert(std::make_pair(sensor_config_params[2], point_cloud_sensor));
+
+                ignition_bridge_->addSensor(
+                    sensor_config_params[0],
+                    sensor_config_params[1],
+                    sensor_config_params[2],
+                    sensor_config_params[3],
+                    sensor_config_params[4],
+                    laserScanCallback,
+                    pointCloudCallback);
             }
             else
             {
@@ -234,6 +252,22 @@ namespace ignition_platform
         const std::string &sensor_name)
     {
         (callbacks_camera_.find(sensor_name)->second).setParameters(info_msg);
+        return;
+    };
+
+    void IgnitionPlatform::laserScanCallback(
+        const sensor_msgs::msg::LaserScan &laser_scan_msg,
+        const std::string &sensor_name)
+    {
+        (callbacks_laser_scan_.find(sensor_name)->second).updateData(laser_scan_msg);
+        return;
+    };
+
+    void IgnitionPlatform::pointCloudCallback(
+        const sensor_msgs::msg::PointCloud2 &point_cloud_msg,
+        const std::string &sensor_name)
+    {
+        (callbacks_point_cloud_.find(sensor_name)->second).updateData(point_cloud_msg);
         return;
     };
 

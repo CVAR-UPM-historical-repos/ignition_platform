@@ -44,7 +44,8 @@ namespace ignition_platform
     std::unordered_map<std::string, std::string> IgnitionBridge::callbacks_sensors_names_ = {};
     std::unordered_map<std::string, cameraCallbackType> IgnitionBridge::callbacks_camera_ = {};
     std::unordered_map<std::string, cameraInfoCallbackType> IgnitionBridge::callbacks_camera_info_ = {};
-
+    std::unordered_map<std::string, laserScanCallbackType> IgnitionBridge::callbacks_laser_scan_ = {};
+    std::unordered_map<std::string, pointCloudCallbackType> IgnitionBridge::callbacks_point_cloud_ = {};
 
     IgnitionBridge::IgnitionBridge(std::string name_space)
     {
@@ -162,4 +163,58 @@ namespace ignition_platform
         return;
     };
 
-}
+    void IgnitionBridge::addSensor(
+        std::string world_name,
+        std::string name_space,
+        std::string sensor_name,
+        std::string link_name,
+        std::string sensor_type,
+        laserScanCallbackType laserScanCallback,
+        pointCloudCallbackType pointCloudCallback)
+    {
+        std::string laser_scan_topic = "/world/" + world_name + "/model/" + name_space + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/scan";
+        callbacks_laser_scan_.insert(std::make_pair(laser_scan_topic, laserScanCallback));
+        callbacks_sensors_names_.insert(std::make_pair(laser_scan_topic, sensor_name));
+        ign_node_ptr_->Subscribe(
+            laser_scan_topic,
+            IgnitionBridge::ignitionLaserScanCallback);
+
+        std::string point_cloud_topic = "/world/" + world_name + "/model/" + name_space + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/scan/points";
+        callbacks_point_cloud_.insert(std::make_pair(point_cloud_topic, pointCloudCallback));
+        callbacks_sensors_names_.insert(std::make_pair(point_cloud_topic, sensor_name));
+        ign_node_ptr_->Subscribe(
+            point_cloud_topic,
+            IgnitionBridge::ignitionPointCloudCallback);
+        return;
+    };
+
+    void IgnitionBridge::ignitionLaserScanCallback(
+        const ignition::msgs::LaserScan &msg, 
+        const ignition::transport::MessageInfo &msg_info)
+    {
+        sensor_msgs::msg::LaserScan ros_laser_scan_msg;
+        ros_ign_bridge::convert_ign_to_ros(msg, ros_laser_scan_msg);
+        auto callback = callbacks_laser_scan_.find(msg_info.Topic());
+        auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
+        if (callback != callbacks_laser_scan_.end())
+        {
+            callback->second(ros_laser_scan_msg, sensor_name->second);
+        }
+        return;
+    };
+
+    void IgnitionBridge::ignitionPointCloudCallback(
+        const ignition::msgs::PointCloudPacked &msg, 
+        const ignition::transport::MessageInfo &msg_info)
+    {
+        sensor_msgs::msg::PointCloud2 ros_point_cloud_msg;
+        ros_ign_bridge::convert_ign_to_ros(msg, ros_point_cloud_msg);
+        auto callback = callbacks_point_cloud_.find(msg_info.Topic());
+        auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
+        if (callback != callbacks_point_cloud_.end())
+        {
+            callback->second(ros_point_cloud_msg, sensor_name->second);
+        }
+        return;
+    };
+}   
