@@ -49,6 +49,7 @@
 #include <math.h>
 #include <as2_core/core_functions.hpp>
 #include <as2_core/aerial_platform.hpp>
+#include <as2_core/frame_utils/frame_utils.hpp>
 #include <as2_core/sensor.hpp>
 #include <as2_core/names/topics.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -107,7 +108,6 @@ namespace ignition_platform
 
     private:
         void resetCommandTwistMsg();
-        Eigen::Vector3d convertENUtoFLU(const float yaw_angle, Eigen::Vector3d &enu_vec);
     };
 }
 

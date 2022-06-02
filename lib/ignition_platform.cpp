@@ -47,7 +47,7 @@ namespace ignition_platform
     std::unordered_map<std::string, as2::sensors::Camera> IgnitionPlatform::callbacks_camera_ = {};
     std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::LaserScan>> IgnitionPlatform::callbacks_laser_scan_ = {};
     std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::PointCloud2>> IgnitionPlatform::callbacks_point_cloud_ = {};
-        
+
     IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform()
     {
         this->declare_parameter("sensors");
@@ -93,7 +93,7 @@ namespace ignition_platform
             if (sensor_config_params.size() != 5)
             {
                 RCLCPP_ERROR_ONCE(this->get_logger(), "Wrong sensor configuration: %s",
-                             sensor_config.c_str());
+                                  sensor_config.c_str());
                 continue;
             }
 
@@ -160,7 +160,8 @@ namespace ignition_platform
             Eigen::Vector3d twist_lineal_enu = Eigen::Vector3d(command_twist_msg_.twist.linear.x,
                                                                command_twist_msg_.twist.linear.y,
                                                                command_twist_msg_.twist.linear.z);
-            Eigen::Vector3d twist_lineal_flu = convertENUtoFLU(yaw_, twist_lineal_enu);
+            
+            Eigen::Vector3d twist_lineal_flu = as2::FrameUtils::convertENUtoFLU(yaw_, twist_lineal_enu);
             command_twist_msg_.twist.linear.x = twist_lineal_flu(0);
             command_twist_msg_.twist.linear.y = twist_lineal_flu(1);
             command_twist_msg_.twist.linear.z = twist_lineal_flu(2);
@@ -222,18 +223,21 @@ namespace ignition_platform
 
     void IgnitionPlatform::odometryCallback(const nav_msgs::msg::Odometry &odom_msg)
     {
-        odometry_raw_estimation_ptr_->updateData(odom_msg);
+        nav_msgs::msg::Odometry odom_enu = odom_msg;
+        Vector3d twist_flu = Eigen::Vector3d(
+            odom_msg.twist.twist.linear.x,
+            odom_msg.twist.twist.linear.y,
+            odom_msg.twist.twist.linear.z);
 
-        tf2::Quaternion q(
-            odom_msg.pose.pose.orientation.x,
-            odom_msg.pose.pose.orientation.y,
-            odom_msg.pose.pose.orientation.z,
-            odom_msg.pose.pose.orientation.w);
+        Eigen::Vector3d twist_enu = as2::FrameUtils::convertFLUtoENU(yaw_, twist_flu);
 
-        tf2::Matrix3x3 m(q);
-        double roll, pitch, yaw;
-        m.getRPY(roll, pitch, yaw);
-        yaw_ = yaw;
+        odom_enu.twist.twist.linear.x = twist_enu(0);
+        odom_enu.twist.twist.linear.y = twist_enu(1);
+        odom_enu.twist.twist.linear.z = twist_enu(2);
+
+        odometry_raw_estimation_ptr_->updateData(odom_enu);
+
+        yaw_ = as2::FrameUtils::getYawFromQuaternion(odom_msg.pose.pose.orientation);
 
         odometry_info_received_ = true;
         return;
@@ -270,18 +274,4 @@ namespace ignition_platform
         (callbacks_point_cloud_.find(sensor_name)->second).updateData(point_cloud_msg);
         return;
     };
-
-    // Convert from ENU (east, north, up) to local FLU (forward, left, up)
-    Eigen::Vector3d IgnitionPlatform::convertENUtoFLU(
-        const float yaw_angle,
-        Eigen::Vector3d &enu_vec)
-    {
-        // Convert from ENU to FLU
-        Eigen::Matrix3d R_FLU;
-        R_FLU << cos(yaw_angle), sin(yaw_angle), 0,
-            -sin(yaw_angle), cos(yaw_angle), 0,
-            0, 0, 1;
-
-        return R_FLU * enu_vec;
-    }
 }
