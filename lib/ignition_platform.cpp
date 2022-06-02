@@ -68,7 +68,7 @@ namespace ignition_platform
         std::string item;
         while (std::getline(ss, item, delim))
         {
-            elems.push_back(item);
+            elems.emplace_back(item);
         }
         return elems;
     };
@@ -145,7 +145,7 @@ namespace ignition_platform
         {
             if (!odometry_info_received_)
             {
-                return true;
+                return false;
             }
             odometry_info_received_ = false;
 

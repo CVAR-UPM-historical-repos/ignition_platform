@@ -75,11 +75,11 @@ namespace ignition_platform
     rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr twist_command_sub_;
 
     public:
-        void configureSensors();
+        void configureSensors() override;
         bool ownSendCommand() override;
-        bool ownSetArmingState(bool state);
-        bool ownSetOffboardControl(bool offboard);
-        bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &msg);
+        bool ownSetArmingState(bool state) override;
+        bool ownSetOffboardControl(bool offboard) override;
+        bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &msg) override;
 
         static std::unique_ptr<as2::sensors::Sensor<geometry_msgs::msg::PoseStamped>> pose_ptr_;
         static void poseCallback(const geometry_msgs::msg::PoseStamped &msg);
