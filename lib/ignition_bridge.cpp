@@ -56,7 +56,7 @@ namespace ignition_platform
 
         // Initialize publishers
         command_twist_pub_ = ign_node_ptr_->Advertise<ignition::msgs::Twist>(
-            name_space + ign_topic_command_twist_);
+            "model" + name_space + ign_topic_command_twist_);
 
         // Initialize subscribers
         ign_node_ptr_->Subscribe(
@@ -194,6 +194,7 @@ namespace ignition_platform
     {
         sensor_msgs::msg::LaserScan ros_laser_scan_msg;
         ros_ign_bridge::convert_ign_to_ros(msg, ros_laser_scan_msg);
+        ros_laser_scan_msg.header.frame_id = "map";
         auto callback = callbacks_laser_scan_.find(msg_info.Topic());
         auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
         if (callback != callbacks_laser_scan_.end())
@@ -209,6 +210,7 @@ namespace ignition_platform
     {
         sensor_msgs::msg::PointCloud2 ros_point_cloud_msg;
         ros_ign_bridge::convert_ign_to_ros(msg, ros_point_cloud_msg);
+        ros_point_cloud_msg.header.frame_id = "map";
         auto callback = callbacks_point_cloud_.find(msg_info.Topic());
         auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
         if (callback != callbacks_point_cloud_.end())
