@@ -73,9 +73,6 @@ namespace ignition_platform
         ~IgnitionPlatform(){};
 
     public:
-    rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr twist_command_sub_;
-
-    public:
         void configureSensors() override;
         bool ownSendCommand() override;
         bool ownSetArmingState(bool state) override;
@@ -103,7 +100,7 @@ namespace ignition_platform
         std::shared_ptr<IgnitionBridge> ignition_bridge_;
         static bool odometry_info_received_;
         as2_msgs::msg::ControlMode control_in_;
-        static double yaw_;
+        static geometry_msgs::msg::Quaternion self_orientation_;
         double yaw_rate_limit_ = M_PI_2;
 
     private:

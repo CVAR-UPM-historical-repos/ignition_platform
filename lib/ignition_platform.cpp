@@ -39,7 +39,7 @@
 namespace ignition_platform
 {
     bool IgnitionPlatform::odometry_info_received_ = false;
-    double IgnitionPlatform::yaw_ = 0.0;
+    geometry_msgs::msg::Quaternion IgnitionPlatform::self_orientation_ = geometry_msgs::msg::Quaternion();
 
     std::unique_ptr<as2::sensors::Sensor<geometry_msgs::msg::PoseStamped>> IgnitionPlatform::pose_ptr_ = nullptr;
     std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> IgnitionPlatform::odometry_raw_estimation_ptr_ = nullptr;
@@ -57,8 +57,9 @@ namespace ignition_platform
 
         // Timer to send command
         static auto timer_commands_ =
-            this->create_wall_timer(std::chrono::milliseconds(CMD_FREQ), [this]()
-                                    { this->sendCommand(); });
+            this->create_wall_timer(
+                std::chrono::milliseconds(CMD_FREQ),
+                [this](){ this->sendCommand();});
     };
 
     std::vector<std::string> split(const std::string &s, char delim)
@@ -157,14 +158,16 @@ namespace ignition_platform
             {
                 command_twist_msg_.twist.angular.z = -yaw_rate_limit_;
             }
+            
             Eigen::Vector3d twist_lineal_enu = Eigen::Vector3d(command_twist_msg_.twist.linear.x,
                                                                command_twist_msg_.twist.linear.y,
                                                                command_twist_msg_.twist.linear.z);
-            
-            Eigen::Vector3d twist_lineal_flu = as2::FrameUtils::convertENUtoFLU(yaw_, twist_lineal_enu);
+
+            Eigen::Vector3d twist_lineal_flu = as2::FrameUtils::convertENUtoFLU(self_orientation_, twist_lineal_enu);
             command_twist_msg_.twist.linear.x = twist_lineal_flu(0);
             command_twist_msg_.twist.linear.y = twist_lineal_flu(1);
             command_twist_msg_.twist.linear.z = twist_lineal_flu(2);
+            
             ignition_bridge_->sendTwistMsg(command_twist_msg_.twist);
         }
         else if (control_in_.reference_frame == as2_msgs::msg::ControlMode::BODY_FLU_FRAME)
@@ -229,7 +232,7 @@ namespace ignition_platform
             odom_msg.twist.twist.linear.y,
             odom_msg.twist.twist.linear.z);
 
-        Eigen::Vector3d twist_enu = as2::FrameUtils::convertFLUtoENU(yaw_, twist_flu);
+        Eigen::Vector3d twist_enu = as2::FrameUtils::convertFLUtoENU(odom_msg.pose.pose.orientation, twist_flu);
 
         odom_enu.twist.twist.linear.x = twist_enu(0);
         odom_enu.twist.twist.linear.y = twist_enu(1);
@@ -237,8 +240,7 @@ namespace ignition_platform
 
         odometry_raw_estimation_ptr_->updateData(odom_enu);
 
-        yaw_ = as2::FrameUtils::getYawFromQuaternion(odom_msg.pose.pose.orientation);
-
+        self_orientation_ = odom_msg.pose.pose.orientation;
         odometry_info_received_ = true;
         return;
     };
