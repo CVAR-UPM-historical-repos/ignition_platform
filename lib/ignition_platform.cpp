@@ -48,6 +48,8 @@ namespace ignition_platform
     std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::LaserScan>> IgnitionPlatform::callbacks_laser_scan_ = {};
     std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::PointCloud2>> IgnitionPlatform::callbacks_point_cloud_ = {};
 
+    std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::NavSatFix>> IgnitionPlatform::callbacks_gps_ = {};
+
     IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform()
     {
         this->declare_parameter("sensors");
@@ -130,6 +132,19 @@ namespace ignition_platform
                     sensor_config_params[4],
                     laserScanCallback,
                     pointCloudCallback);
+            }
+            else if (sensor_type == "gps")
+            {
+                as2::sensors::Sensor<sensor_msgs::msg::NavSatFix> gps_sensor(sensor_config_params[2], this);
+                callbacks_gps_.insert(std::make_pair(sensor_config_params[2], gps_sensor));
+
+                ignition_bridge_->addSensor(
+                    sensor_config_params[0],
+                    sensor_config_params[1],
+                    sensor_config_params[2],
+                    sensor_config_params[3],
+                    sensor_config_params[4],
+                    gpsCallback);
             }
             else
             {
@@ -218,13 +233,13 @@ namespace ignition_platform
         ignition_bridge_->sendTwistMsg(twist_msg);
     }
 
-    void IgnitionPlatform::poseCallback(const geometry_msgs::msg::PoseStamped &pose_msg)
+    void IgnitionPlatform::poseCallback(geometry_msgs::msg::PoseStamped &pose_msg)
     {
         pose_ptr_->updateData(pose_msg);
         return;
     };
 
-    void IgnitionPlatform::odometryCallback(const nav_msgs::msg::Odometry &odom_msg)
+    void IgnitionPlatform::odometryCallback(nav_msgs::msg::Odometry &odom_msg)
     {
         nav_msgs::msg::Odometry odom_enu = odom_msg;
         Vector3d twist_flu = Eigen::Vector3d(
@@ -246,7 +261,7 @@ namespace ignition_platform
     };
 
     void IgnitionPlatform::cameraCallback(
-        const sensor_msgs::msg::Image &image_msg,
+        sensor_msgs::msg::Image &image_msg,
         const std::string &sensor_name)
     {
         (callbacks_camera_.find(sensor_name)->second).updateData(image_msg);
@@ -254,7 +269,7 @@ namespace ignition_platform
     };
 
     void IgnitionPlatform::cameraInfoCallback(
-        const sensor_msgs::msg::CameraInfo &info_msg,
+        sensor_msgs::msg::CameraInfo &info_msg,
         const std::string &sensor_name)
     {
         (callbacks_camera_.find(sensor_name)->second).setParameters(info_msg);
@@ -262,18 +277,28 @@ namespace ignition_platform
     };
 
     void IgnitionPlatform::laserScanCallback(
-        const sensor_msgs::msg::LaserScan &laser_scan_msg,
+        sensor_msgs::msg::LaserScan &laser_scan_msg,
         const std::string &sensor_name)
     {
+        laser_scan_msg.header.frame_id = "map";
         (callbacks_laser_scan_.find(sensor_name)->second).updateData(laser_scan_msg);
         return;
     };
 
     void IgnitionPlatform::pointCloudCallback(
-        const sensor_msgs::msg::PointCloud2 &point_cloud_msg,
+        sensor_msgs::msg::PointCloud2 &point_cloud_msg,
         const std::string &sensor_name)
     {
+        point_cloud_msg.header.frame_id = "map";
         (callbacks_point_cloud_.find(sensor_name)->second).updateData(point_cloud_msg);
+        return;
+    };
+
+    void IgnitionPlatform::gpsCallback(
+        sensor_msgs::msg::NavSatFix &gps_msg, 
+        const std::string &sensor_name)
+    {
+        (callbacks_gps_.find(sensor_name)->second).updateData(gps_msg);
         return;
     };
 }

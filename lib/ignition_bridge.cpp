@@ -38,14 +38,15 @@
 
 namespace ignition_platform
 {
-    poseCallbackType IgnitionBridge::poseCallback_ = [](const geometry_msgs::msg::PoseStamped &msg){};
-    odometryCallbackType IgnitionBridge::odometryCallback_ = [](const nav_msgs::msg::Odometry &msg){};
+    poseCallbackType IgnitionBridge::poseCallback_ = [](geometry_msgs::msg::PoseStamped &msg){};
+    odometryCallbackType IgnitionBridge::odometryCallback_ = [](nav_msgs::msg::Odometry &msg){};
 
     std::unordered_map<std::string, std::string> IgnitionBridge::callbacks_sensors_names_ = {};
     std::unordered_map<std::string, cameraCallbackType> IgnitionBridge::callbacks_camera_ = {};
     std::unordered_map<std::string, cameraInfoCallbackType> IgnitionBridge::callbacks_camera_info_ = {};
     std::unordered_map<std::string, laserScanCallbackType> IgnitionBridge::callbacks_laser_scan_ = {};
     std::unordered_map<std::string, pointCloudCallbackType> IgnitionBridge::callbacks_point_cloud_ = {};
+    std::unordered_map<std::string, gpsCallbackType> IgnitionBridge::callbacks_gps_ = {};
 
     IgnitionBridge::IgnitionBridge(std::string name_space)
     {
@@ -194,7 +195,6 @@ namespace ignition_platform
     {
         sensor_msgs::msg::LaserScan ros_laser_scan_msg;
         ros_ign_bridge::convert_ign_to_ros(msg, ros_laser_scan_msg);
-        ros_laser_scan_msg.header.frame_id = "map";
         auto callback = callbacks_laser_scan_.find(msg_info.Topic());
         auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
         if (callback != callbacks_laser_scan_.end())
@@ -210,12 +210,76 @@ namespace ignition_platform
     {
         sensor_msgs::msg::PointCloud2 ros_point_cloud_msg;
         ros_ign_bridge::convert_ign_to_ros(msg, ros_point_cloud_msg);
-        ros_point_cloud_msg.header.frame_id = "map";
         auto callback = callbacks_point_cloud_.find(msg_info.Topic());
         auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
         if (callback != callbacks_point_cloud_.end())
         {
             callback->second(ros_point_cloud_msg, sensor_name->second);
+        }
+        return;
+    };
+
+    void IgnitionBridge::addSensor(
+        std::string world_name,
+        std::string name_space,
+        std::string sensor_name,
+        std::string link_name,
+        std::string sensor_type,
+        gpsCallbackType gpsCallback)
+    {
+        std::string gps_topic = "/world/" + world_name + "/model/" + name_space + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/navsat";
+        callbacks_gps_.insert(std::make_pair(gps_topic, gpsCallback));
+        callbacks_sensors_names_.insert(std::make_pair(gps_topic, sensor_name));
+        ign_node_ptr_->Subscribe(
+            gps_topic,
+            IgnitionBridge::ignitionGPSCallback);
+        return;
+    };
+
+    std::string replace_delimiter(
+        const std::string & input,
+        const std::string & old_delim,
+        const std::string new_delim)
+    {
+        std::string output;
+        output.reserve(input.size());
+
+        std::size_t last_pos = 0;
+
+        while (last_pos < input.size()) {
+            std::size_t pos = input.find(old_delim, last_pos);
+            output += input.substr(last_pos, pos - last_pos);
+            if (pos != std::string::npos) {
+            output += new_delim;
+            pos += old_delim.size();
+            }
+            last_pos = pos;
+        }
+        return output;
+    }
+
+    void IgnitionBridge::ignitionGPSCallback(
+        const ignition::msgs::NavSat &ign_msg, 
+        const ignition::transport::MessageInfo &msg_info)
+    {
+        sensor_msgs::msg::NavSatFix ros_msg;
+        // ros_ign_bridge::convert_ign_to_ros(msg, ros_gps_msg);
+
+        ros_ign_bridge::convert_ign_to_ros(ign_msg.header(), ros_msg.header);
+        ros_msg.header.frame_id = replace_delimiter(ign_msg.frame_id(), "::", "/");
+        ros_msg.latitude = ign_msg.latitude_deg();
+        ros_msg.longitude = ign_msg.longitude_deg();
+        ros_msg.altitude = ign_msg.altitude();
+
+        // position_covariance is not supported in Ignition::Msgs::NavSat.
+        ros_msg.position_covariance_type = sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
+        ros_msg.status.status = sensor_msgs::msg::NavSatStatus::STATUS_FIX;
+
+        auto callback = callbacks_gps_.find(msg_info.Topic());
+        auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
+        if (callback != callbacks_gps_.end())
+        {
+            callback->second(ros_msg, sensor_name->second);
         }
         return;
     };

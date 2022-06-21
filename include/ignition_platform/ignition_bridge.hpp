@@ -47,6 +47,7 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
+#include "sensor_msgs/msg/nav_sat_fix.hpp"
 
 #include <ignition/transport.hh>
 #include <ignition/msgs.hh>
@@ -54,14 +55,16 @@
 
 namespace ignition_platform
 {
-    typedef void (*poseCallbackType)(const geometry_msgs::msg::PoseStamped &msg);
-    typedef void (*odometryCallbackType)(const nav_msgs::msg::Odometry &msg);
+    typedef void (*poseCallbackType)(geometry_msgs::msg::PoseStamped &msg);
+    typedef void (*odometryCallbackType)(nav_msgs::msg::Odometry &msg);
 
-    typedef void (*cameraCallbackType)(const sensor_msgs::msg::Image &msg, const std::string &sensor_name);
-    typedef void (*cameraInfoCallbackType)(const sensor_msgs::msg::CameraInfo &msg, const std::string &sensor_name);
+    typedef void (*cameraCallbackType)(sensor_msgs::msg::Image &msg, const std::string &sensor_name);
+    typedef void (*cameraInfoCallbackType)(sensor_msgs::msg::CameraInfo &msg, const std::string &sensor_name);
 
-    typedef void (*laserScanCallbackType)(const sensor_msgs::msg::LaserScan &msg, const std::string &sensor_name);
-    typedef void (*pointCloudCallbackType)(const sensor_msgs::msg::PointCloud2 &msg, const std::string &sensor_name);
+    typedef void (*laserScanCallbackType)(sensor_msgs::msg::LaserScan &msg, const std::string &sensor_name);
+    typedef void (*pointCloudCallbackType)(sensor_msgs::msg::PointCloud2 &msg, const std::string &sensor_name);
+
+    typedef void (*gpsCallbackType)(sensor_msgs::msg::NavSatFix &msg, const std::string &sensor_name);
 
     class IgnitionBridge
     {
@@ -104,6 +107,14 @@ namespace ignition_platform
             laserScanCallbackType laserScanCallback,
             pointCloudCallbackType pointCloudCallback);
 
+        void addSensor(
+            std::string world_name,
+            std::string name_space,
+            std::string sensor_name,
+            std::string link_name,
+            std::string sensor_type,
+            gpsCallbackType gpsCallback);
+
     private:
         // Ignition callbacks
         static poseCallbackType poseCallback_;
@@ -123,6 +134,10 @@ namespace ignition_platform
         static std::unordered_map<std::string, laserScanCallbackType> callbacks_laser_scan_;
         static void ignitionPointCloudCallback(const ignition::msgs::PointCloudPacked &msg, const ignition::transport::MessageInfo &_info);
         static std::unordered_map<std::string, pointCloudCallbackType> callbacks_point_cloud_;
+
+
+        static void ignitionGPSCallback(const ignition::msgs::NavSat &msg, const ignition::transport::MessageInfo &_info);
+        static std::unordered_map<std::string, gpsCallbackType> callbacks_gps_;
     };
 }
 

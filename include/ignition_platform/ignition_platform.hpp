@@ -57,6 +57,7 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <image_transport/image_transport.hpp>
+#include "sensor_msgs/msg/nav_sat_fix.hpp"
 
 #include "ignition_bridge.hpp"
 
@@ -80,21 +81,23 @@ namespace ignition_platform
         bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &msg) override;
 
         static std::unique_ptr<as2::sensors::Sensor<geometry_msgs::msg::PoseStamped>> pose_ptr_;
-        static void poseCallback(const geometry_msgs::msg::PoseStamped &msg);
+        static void poseCallback(geometry_msgs::msg::PoseStamped &msg);
 
         static std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> odometry_raw_estimation_ptr_;
-        static void odometryCallback(const nav_msgs::msg::Odometry &msg);
+        static void odometryCallback(nav_msgs::msg::Odometry &msg);
 
         static std::unordered_map<std::string, as2::sensors::Camera> callbacks_camera_;
-        static void cameraCallback(const sensor_msgs::msg::Image &msg, const std::string &sensor_name);
-        static void cameraInfoCallback(const sensor_msgs::msg::CameraInfo &msg, const std::string &sensor_name);
+        static void cameraCallback(sensor_msgs::msg::Image &msg, const std::string &sensor_name);
+        static void cameraInfoCallback(sensor_msgs::msg::CameraInfo &msg, const std::string &sensor_name);
 
         static std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::LaserScan>> callbacks_laser_scan_;
-        static void laserScanCallback(const sensor_msgs::msg::LaserScan &msg, const std::string &sensor_name);
+        static void laserScanCallback(sensor_msgs::msg::LaserScan &msg, const std::string &sensor_name);
 
         static std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::PointCloud2>> callbacks_point_cloud_;
-        static void pointCloudCallback(const sensor_msgs::msg::PointCloud2 &msg, const std::string &sensor_name);
+        static void pointCloudCallback(sensor_msgs::msg::PointCloud2 &msg, const std::string &sensor_name);
 
+        static std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::NavSatFix>> callbacks_gps_;
+        static void gpsCallback(sensor_msgs::msg::NavSatFix &msg, const std::string &sensor_name);
 
     private:
         std::shared_ptr<IgnitionBridge> ignition_bridge_;
