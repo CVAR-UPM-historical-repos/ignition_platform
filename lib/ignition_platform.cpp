@@ -40,6 +40,7 @@ namespace ignition_platform
 {
     bool IgnitionPlatform::odometry_info_received_ = false;
     geometry_msgs::msg::Quaternion IgnitionPlatform::self_orientation_ = geometry_msgs::msg::Quaternion();
+    std::string IgnitionPlatform::namespace_ = "";
 
     std::unique_ptr<as2::sensors::Sensor<geometry_msgs::msg::PoseStamped>> IgnitionPlatform::pose_ptr_ = nullptr;
     std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> IgnitionPlatform::odometry_raw_estimation_ptr_ = nullptr;
@@ -53,7 +54,8 @@ namespace ignition_platform
     IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform()
     {
         this->declare_parameter("sensors");
-        ignition_bridge_ = std::make_shared<IgnitionBridge>(this->get_namespace());
+        namespace_ = this->get_namespace();
+        ignition_bridge_ = std::make_shared<IgnitionBridge>(namespace_);
 
         this->configureSensors();
 
@@ -241,19 +243,21 @@ namespace ignition_platform
 
     void IgnitionPlatform::odometryCallback(nav_msgs::msg::Odometry &odom_msg)
     {
-        nav_msgs::msg::Odometry odom_enu = odom_msg;
-        Vector3d twist_flu = Eigen::Vector3d(
-            odom_msg.twist.twist.linear.x,
-            odom_msg.twist.twist.linear.y,
-            odom_msg.twist.twist.linear.z);
+        // nav_msgs::msg::Odometry odom_enu = odom_msg;
+        // Vector3d twist_flu = Eigen::Vector3d(
+        //     odom_msg.twist.twist.linear.x,
+        //     odom_msg.twist.twist.linear.y,
+        //     odom_msg.twist.twist.linear.z);
 
-        Eigen::Vector3d twist_enu = as2::FrameUtils::convertFLUtoENU(odom_msg.pose.pose.orientation, twist_flu);
+        // Eigen::Vector3d twist_enu = as2::FrameUtils::convertFLUtoENU(odom_msg.pose.pose.orientation, twist_flu);
 
-        odom_enu.twist.twist.linear.x = twist_enu(0);
-        odom_enu.twist.twist.linear.y = twist_enu(1);
-        odom_enu.twist.twist.linear.z = twist_enu(2);
+        // odom_enu.twist.twist.linear.x = twist_enu(0);
+        // odom_enu.twist.twist.linear.y = twist_enu(1);
+        // odom_enu.twist.twist.linear.z = twist_enu(2);
 
-        odometry_raw_estimation_ptr_->updateData(odom_enu);
+        odom_msg.header.frame_id = generateTfName(namespace_, "odom");
+
+        odometry_raw_estimation_ptr_->updateData(odom_msg);
 
         self_orientation_ = odom_msg.pose.pose.orientation;
         odometry_info_received_ = true;

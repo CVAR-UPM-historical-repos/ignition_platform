@@ -52,6 +52,7 @@
 #include <as2_core/frame_utils/frame_utils.hpp>
 #include <as2_core/sensor.hpp>
 #include <as2_core/names/topics.hpp>
+#include <as2_core/tf_utils.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
@@ -105,6 +106,7 @@ namespace ignition_platform
         as2_msgs::msg::ControlMode control_in_;
         static geometry_msgs::msg::Quaternion self_orientation_;
         double yaw_rate_limit_ = M_PI_2;
+        static std::string namespace_;
 
     private:
         void resetCommandTwistMsg();
