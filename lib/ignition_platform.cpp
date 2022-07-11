@@ -85,7 +85,8 @@ namespace ignition_platform
         ignition_bridge_->setPoseCallback(poseCallback);
 
         odometry_raw_estimation_ptr_ =
-            std::make_unique<as2::sensors::Sensor<nav_msgs::msg::Odometry>>("odometry", this);
+            std::make_unique<as2::sensors::Sensor<nav_msgs::msg::Odometry>>(
+                "odom", this);
         ignition_bridge_->setOdometryCallback(odometryCallback);
 
         std::string sensors_param = this->get_parameter("sensors").as_string();
