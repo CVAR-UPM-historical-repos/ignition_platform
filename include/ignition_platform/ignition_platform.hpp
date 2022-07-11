@@ -75,6 +75,7 @@ namespace ignition_platform
         ~IgnitionPlatform(){};
 
     public:
+
         void configureSensors() override;
         bool ownSendCommand() override;
         bool ownSetArmingState(bool state) override;

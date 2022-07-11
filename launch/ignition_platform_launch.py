@@ -35,8 +35,7 @@ def get_platform_node(context, *args, **kwargs):
             "max_thrust": LaunchConfiguration('max_thrust'),
             "min_thrust":  LaunchConfiguration('min_thrust'),
             "sensors": get_sensors(drone_namespace)
-            }],
-        remappings=[("sensor_measurements/odometry", "self_localization/odom")]
+            }]
     )
     return [node]
 
