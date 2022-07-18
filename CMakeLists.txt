@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 set(PROJECT_NAME ignition_platform)
 set(NODE_NAME ignition_platform)
-project(${PROJECT_NAME} VERSION 0.1.0)
+project(${PROJECT_NAME} VERSION 0.2.0)
 
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
@@ -16,13 +16,12 @@ endif()
 set(PROJECT_DEPENDENCIES
   ament_cmake
   rclcpp
-  std_msgs
   sensor_msgs
   geometry_msgs
   nav_msgs
   Eigen3
-  pluginlib
   as2_core
+  image_transport
   ros_ign_bridge
   ros_ign_gazebo
   tf2
@@ -79,8 +78,6 @@ add_executable(${PROJECT_NAME}_node src/${NODE_NAME}_main.cpp ${SOURCE_CPP_FILES
 ament_target_dependencies(${PROJECT_NAME}_node 
   rclcpp 
   sensor_msgs 
-  std_msgs
-  std_srvs
   nav_msgs
   as2_core
   as2_msgs
