@@ -53,7 +53,7 @@ namespace ignition_platform
 
     IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform()
     {
-        this->declare_parameter("sensors");
+        this->declare_parameter<std::string>("sensors");
         namespace_ = this->get_namespace();
         ignition_bridge_ = std::make_shared<IgnitionBridge>(namespace_);
 
