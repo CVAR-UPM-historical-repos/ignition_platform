@@ -38,6 +38,32 @@
 
 namespace ignition_platform
 {
+    static std::string refactorizeFrameId(const std::string& original_frame_id, const std::string& sensor_name, const std::string& field_to_append="")
+    {
+      // check if there is a namespace in the frame_id it must be before the sensor_name 
+      std::string frame_id = original_frame_id;
+      std::string ns = "";
+      if (frame_id.find(sensor_name) != std::string::npos)
+      {
+        ns = frame_id.substr(0, frame_id.find(sensor_name));
+        // remove / from the end of the namespace
+        if (ns.back() == '/')
+        {
+          ns.pop_back();
+        }
+      }
+
+      if (field_to_append != "")
+      {
+        frame_id = ns + "/" + sensor_name + "/" + field_to_append;
+      }
+      else
+      {
+        frame_id = ns + "/" + sensor_name;
+      }
+      return frame_id;
+    };
+    
     std::string IgnitionBridge::name_space_ = "";
     poseCallbackType IgnitionBridge::poseCallback_ = [](geometry_msgs::msg::PoseStamped &msg){};
     odometryCallbackType IgnitionBridge::odometryCallback_ = [](nav_msgs::msg::Odometry &msg){};
@@ -236,6 +262,7 @@ namespace ignition_platform
         return;
     };
 
+
     void IgnitionBridge::ignitionCameraCallback(
         const ignition::msgs::Image &msg, 
         const ignition::transport::MessageInfo &msg_info)
@@ -244,6 +271,10 @@ namespace ignition_platform
         ros_ign_bridge::convert_ign_to_ros(msg, ros_image_msg);
         auto callback = callbacks_camera_.find(msg_info.Topic());
         auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
+
+        static auto frame_id = refactorizeFrameId(ros_image_msg.header.frame_id, sensor_name->second , "camera_link");
+        ros_image_msg.header.frame_id = frame_id;
+
         if (callback != callbacks_camera_.end())
         {
             callback->second(ros_image_msg, sensor_name->second);
@@ -259,6 +290,12 @@ namespace ignition_platform
         ros_ign_bridge::convert_ign_to_ros(msg, ros_camera_info_msg);
         auto callback = callbacks_camera_info_.find(msg_info.Topic());
         auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
+
+        static auto frame_id = refactorizeFrameId(ros_camera_info_msg.header.frame_id, sensor_name->second , "camera_link");
+        ros_camera_info_msg.header.frame_id = frame_id;
+
+        // std::cout << "final_frame_id: " << final_frame_id << std::endl;
+
         if (callback != callbacks_camera_info_.end())
         {
             callback->second(ros_camera_info_msg, sensor_name->second);
