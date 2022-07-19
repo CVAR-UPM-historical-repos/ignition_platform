@@ -38,15 +38,25 @@
 
 namespace ignition_platform
 {
+    std::string IgnitionBridge::name_space_ = "";
     poseCallbackType IgnitionBridge::poseCallback_ = [](geometry_msgs::msg::PoseStamped &msg){};
     odometryCallbackType IgnitionBridge::odometryCallback_ = [](nav_msgs::msg::Odometry &msg){};
 
+    imuSensorCallbackType IgnitionBridge::imuCallback_ = [](sensor_msgs::msg::Imu &msg){};
+    airPressureSensorCallbackType IgnitionBridge::airPressureCallback_ = [](sensor_msgs::msg::FluidPressure &msg){};
+    magnetometerSensorCallbackType IgnitionBridge::magnetometerCallback_ = [](sensor_msgs::msg::MagneticField &msg){};
+
     std::unordered_map<std::string, std::string> IgnitionBridge::callbacks_sensors_names_ = {};
+    std::unordered_map<std::string, tfCallbackType> IgnitionBridge::callbacks_sensors_transform_ = {};
+
     std::unordered_map<std::string, cameraCallbackType> IgnitionBridge::callbacks_camera_ = {};
     std::unordered_map<std::string, cameraInfoCallbackType> IgnitionBridge::callbacks_camera_info_ = {};
     std::unordered_map<std::string, laserScanCallbackType> IgnitionBridge::callbacks_laser_scan_ = {};
     std::unordered_map<std::string, pointCloudCallbackType> IgnitionBridge::callbacks_point_cloud_ = {};
     std::unordered_map<std::string, gpsCallbackType> IgnitionBridge::callbacks_gps_ = {};
+    std::unordered_map<std::string, imuCallbackType> IgnitionBridge::callbacks_imu_ = {};
+    std::unordered_map<std::string, airPressureCallbackType> IgnitionBridge::callbacks_air_pressure_ = {};
+    std::unordered_map<std::string, magnetometerCallbackType> IgnitionBridge::callbacks_magnetometer_ = {};
 
     IgnitionBridge::IgnitionBridge(std::string name_space)
     {
@@ -67,6 +77,10 @@ namespace ignition_platform
         ign_node_ptr_->Subscribe(
                 "model" + name_space + ign_topic_sensor_odometry_, 
                 IgnitionBridge::ignitionOdometryCallback);
+
+        ign_node_ptr_->Subscribe(
+                "model" + name_space + ign_topic_sensor_pose_static_, 
+                IgnitionBridge::ignitionPoseStaticCallback);
 
         return;
     };
@@ -107,6 +121,92 @@ namespace ignition_platform
         return;
     };
 
+    void IgnitionBridge::setImuCallback(imuSensorCallbackType callback, std::string world_name)
+    {
+        imuCallback_ = callback;
+        std::string ign_topic_sensor_imu = "/imu_sensor/imu";
+        std::string topic = "world/" + world_name + "/model" + name_space_ + "/link/base_link/sensor" + ign_topic_sensor_imu;
+        ign_node_ptr_->Subscribe(topic, IgnitionBridge::ignitionImuSensorCallback);
+        return;
+    };
+
+    void IgnitionBridge::ignitionImuSensorCallback(const ignition::msgs::IMU &msg)
+    {
+        sensor_msgs::msg::Imu imu_msg;
+        ros_ign_bridge::convert_ign_to_ros(msg, imu_msg);
+        imuCallback_(imu_msg);
+        return;
+    };
+
+    void IgnitionBridge::setAirPressureCallback(airPressureSensorCallbackType callback, std::string world_name)
+    {
+        airPressureCallback_ = callback;
+        std::string ign_topic_sensor_air_pressure = "/air_pressure/air_pressure";
+        std::string topic = "world/" + world_name + "/model" + name_space_ + "/link/base_link/sensor" + ign_topic_sensor_air_pressure;
+        ign_node_ptr_->Subscribe(topic, IgnitionBridge::ignitionAirPressureSensorCallback);
+        return;
+    };
+
+    void IgnitionBridge::ignitionAirPressureSensorCallback(const ignition::msgs::FluidPressure &msg)
+    {
+        sensor_msgs::msg::FluidPressure air_pressure_msg;
+        ros_ign_bridge::convert_ign_to_ros(msg, air_pressure_msg);
+        airPressureCallback_(air_pressure_msg);
+        return;
+    };
+
+    void IgnitionBridge::setMagnetometerCallback(magnetometerSensorCallbackType callback, std::string world_name)
+    {
+        magnetometerCallback_ = callback;
+        std::string ign_topic_sensor_magnetometer = "/magnetometer/magnetometer";
+        std::string topic = "world/" + world_name + "/model" + name_space_ + "/link/base_link/sensor" + ign_topic_sensor_magnetometer;
+        ign_node_ptr_->Subscribe(topic, IgnitionBridge::ignitionMagnetometerSensorCallback);
+        return;
+    };
+
+    void IgnitionBridge::ignitionMagnetometerSensorCallback(const ignition::msgs::Magnetometer &msg)
+    {
+        sensor_msgs::msg::MagneticField magnetometer_msg;
+        ros_ign_bridge::convert_ign_to_ros(msg, magnetometer_msg);
+        magnetometerCallback_(magnetometer_msg);
+        return;
+    };
+
+    void IgnitionBridge::ignitionPoseStaticCallback(const ignition::msgs::Pose_V &msg)
+    {
+        tf2_msgs::msg::TFMessage pose_static_msg;
+        ros_ign_bridge::convert_ign_to_ros(msg, pose_static_msg);
+
+        for (int i=0; i<pose_static_msg.transforms.size(); i++)
+        {
+            geometry_msgs::msg::TransformStamped transform_stamped = pose_static_msg.transforms[i];
+            if (("/" + transform_stamped.header.frame_id) == name_space_ &&
+                ("/" + transform_stamped.child_frame_id) != (name_space_ + "/base_link"))
+            {
+                std::string parent_id = transform_stamped.header.frame_id;
+                std::string child_id = transform_stamped.child_frame_id;
+                std::string sensor_name = child_id.substr(parent_id.length() + 1);
+
+                transform_stamped.header.frame_id = name_space_ + "/base_link";
+                transform_stamped.child_frame_id = name_space_ + "/" + sensor_name;
+
+                auto callback = callbacks_sensors_transform_.find(sensor_name);
+                if (callback != callbacks_sensors_transform_.end())
+                {
+                    callback->second(transform_stamped, sensor_name);
+                }
+            }
+        }
+        return;
+    };
+
+    void IgnitionBridge::unsuscribePoseStatic()
+    {   
+        std::string topic = "model" + name_space_ + "/pose_static";
+        ign_node_ptr_->Unsubscribe(topic);   
+        return;
+    };
+
     // Cameras
     void IgnitionBridge::addSensor(
         std::string world_name,
@@ -115,7 +215,8 @@ namespace ignition_platform
         std::string link_name,
         std::string sensor_type,
         cameraCallbackType cameraCallback,
-        cameraInfoCallbackType cameraInfoCallback)
+        cameraInfoCallbackType cameraInfoCallback,
+        tfCallbackType poseStaticCallback)
     {
         std::string camera_topic = "/world/" + world_name + "/model/" + name_space + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/image";
         callbacks_camera_.insert(std::make_pair(camera_topic, cameraCallback));
@@ -131,6 +232,8 @@ namespace ignition_platform
         ign_node_ptr_->Subscribe(
             camera_info_topic,
             IgnitionBridge::ignitionCameraInfoCallback);
+        
+        callbacks_sensors_transform_.insert(std::make_pair(sensor_name, poseStaticCallback));
         return;
     };
 
@@ -171,7 +274,8 @@ namespace ignition_platform
         std::string link_name,
         std::string sensor_type,
         laserScanCallbackType laserScanCallback,
-        pointCloudCallbackType pointCloudCallback)
+        pointCloudCallbackType pointCloudCallback,
+        tfCallbackType poseStaticCallback)
     {
         std::string laser_scan_topic = "/world/" + world_name + "/model/" + name_space + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/scan";
         callbacks_laser_scan_.insert(std::make_pair(laser_scan_topic, laserScanCallback));
@@ -186,6 +290,8 @@ namespace ignition_platform
         ign_node_ptr_->Subscribe(
             point_cloud_topic,
             IgnitionBridge::ignitionPointCloudCallback);
+
+        callbacks_sensors_transform_.insert(std::make_pair(sensor_name, poseStaticCallback));
         return;
     };
 
@@ -225,7 +331,8 @@ namespace ignition_platform
         std::string sensor_name,
         std::string link_name,
         std::string sensor_type,
-        gpsCallbackType gpsCallback)
+        gpsCallbackType gpsCallback,
+        tfCallbackType poseStaticCallback)
     {
         std::string gps_topic = "/world/" + world_name + "/model/" + name_space + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/navsat";
         callbacks_gps_.insert(std::make_pair(gps_topic, gpsCallback));
@@ -233,6 +340,8 @@ namespace ignition_platform
         ign_node_ptr_->Subscribe(
             gps_topic,
             IgnitionBridge::ignitionGPSCallback);
+        
+        callbacks_sensors_transform_.insert(std::make_pair(sensor_name, poseStaticCallback));
         return;
     };
 
@@ -256,7 +365,7 @@ namespace ignition_platform
             last_pos = pos;
         }
         return output;
-    }
+    };
 
     void IgnitionBridge::ignitionGPSCallback(
         const ignition::msgs::NavSat &ign_msg, 
@@ -280,6 +389,111 @@ namespace ignition_platform
         if (callback != callbacks_gps_.end())
         {
             callback->second(ros_msg, sensor_name->second);
+        }
+        return;
+    };
+
+    void IgnitionBridge::addSensor(
+        std::string world_name,
+        std::string name_space,
+        std::string sensor_name,
+        std::string link_name,
+        std::string sensor_type,
+        imuCallbackType imuCallback,
+        tfCallbackType poseStaticCallback)
+    {
+        std::string imu_topic = "/world/" + world_name + "/model/" + name_space + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/navsat";
+        callbacks_imu_.insert(std::make_pair(imu_topic, imuCallback));
+        callbacks_sensors_names_.insert(std::make_pair(imu_topic, sensor_name));
+        ign_node_ptr_->Subscribe(
+            imu_topic,
+            IgnitionBridge::ignitionGPSCallback);
+        
+        callbacks_sensors_transform_.insert(std::make_pair(sensor_name, poseStaticCallback));
+        return;
+    };
+
+    void IgnitionBridge::ignitionImuCallback(
+        const ignition::msgs::IMU &ign_msg, 
+        const ignition::transport::MessageInfo &msg_info)
+    {
+        sensor_msgs::msg::Imu ros_imu_msg;
+        ros_ign_bridge::convert_ign_to_ros(ign_msg, ros_imu_msg);
+        auto callback = callbacks_imu_.find(msg_info.Topic());
+        auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
+        if (callback != callbacks_imu_.end())
+        {
+            callback->second(ros_imu_msg, sensor_name->second);
+        }
+        return;
+    };
+
+    void IgnitionBridge::addSensor(
+        std::string world_name,
+        std::string name_space,
+        std::string sensor_name,
+        std::string link_name,
+        std::string sensor_type,
+        airPressureCallbackType air_pressureCallback,
+        tfCallbackType poseStaticCallback)
+    {
+        std::string air_pressure_topic = "/world/" + world_name + "/model/" + name_space + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/navsat";
+        callbacks_air_pressure_.insert(std::make_pair(air_pressure_topic, air_pressureCallback));
+        callbacks_sensors_names_.insert(std::make_pair(air_pressure_topic, sensor_name));
+        ign_node_ptr_->Subscribe(
+            air_pressure_topic,
+            IgnitionBridge::ignitionGPSCallback);
+        
+        callbacks_sensors_transform_.insert(std::make_pair(sensor_name, poseStaticCallback));
+        return;
+    };
+
+    void IgnitionBridge::ignitionAirPressureCallback(
+        const ignition::msgs::FluidPressure &ign_msg, 
+        const ignition::transport::MessageInfo &msg_info)
+    {
+        sensor_msgs::msg::FluidPressure ros_air_pressure_msg;
+        ros_ign_bridge::convert_ign_to_ros(ign_msg, ros_air_pressure_msg);
+        auto callback = callbacks_air_pressure_.find(msg_info.Topic());
+        auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
+        if (callback != callbacks_air_pressure_.end())
+        {
+            callback->second(ros_air_pressure_msg, sensor_name->second);
+        }
+        return;
+    };
+
+    void IgnitionBridge::addSensor(
+        std::string world_name,
+        std::string name_space,
+        std::string sensor_name,
+        std::string link_name,
+        std::string sensor_type,
+        magnetometerCallbackType magnetometerCallback,
+        tfCallbackType poseStaticCallback)
+    {
+        std::string magnetometer_topic = "/world/" + world_name + "/model/" + name_space + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/navsat";
+        callbacks_magnetometer_.insert(std::make_pair(magnetometer_topic, magnetometerCallback));
+        callbacks_sensors_names_.insert(std::make_pair(magnetometer_topic, sensor_name));
+        ign_node_ptr_->Subscribe(
+            magnetometer_topic,
+            IgnitionBridge::ignitionGPSCallback);
+        
+        callbacks_sensors_transform_.insert(std::make_pair(sensor_name, poseStaticCallback));
+        return;
+    };
+
+    void IgnitionBridge::ignitionMagnometerCallback(
+        const ignition::msgs::Magnetometer &ign_msg, 
+        const ignition::transport::MessageInfo &msg_info)
+    {
+        sensor_msgs::msg::MagneticField ros_magnetometer_msg;
+        ros_ign_bridge::convert_ign_to_ros(ign_msg, ros_magnetometer_msg);
+        auto callback = callbacks_magnetometer_.find(msg_info.Topic());
+        auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
+        if (callback != callbacks_magnetometer_.end())
+        {
+            callback->second(ros_magnetometer_msg, sensor_name->second);
         }
         return;
     };

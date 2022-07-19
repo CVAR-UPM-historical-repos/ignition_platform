@@ -37,7 +37,8 @@
 #include "ignition_platform.hpp"
 
 namespace ignition_platform
-{   
+{
+    std::shared_ptr<IgnitionBridge> IgnitionPlatform::ignition_bridge_ = nullptr;
     bool IgnitionPlatform::odometry_info_received_ = false;
     geometry_msgs::msg::Quaternion IgnitionPlatform::self_orientation_ = geometry_msgs::msg::Quaternion();
     std::string IgnitionPlatform::namespace_ = "";
@@ -45,11 +46,16 @@ namespace ignition_platform
     std::unique_ptr<as2::sensors::Sensor<geometry_msgs::msg::PoseStamped>> IgnitionPlatform::pose_ptr_ = nullptr;
     std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> IgnitionPlatform::odometry_raw_estimation_ptr_ = nullptr;
 
+    std::unique_ptr<as2::sensors::Sensor<sensor_msgs::msg::Imu>> IgnitionPlatform::imu_ptr_ = nullptr;
+    std::unique_ptr<as2::sensors::Sensor<sensor_msgs::msg::FluidPressure>> IgnitionPlatform::air_pressure_ptr_ = nullptr;
+    std::unique_ptr<as2::sensors::Sensor<sensor_msgs::msg::MagneticField>> IgnitionPlatform::magnetometer_ptr_ = nullptr;
+
+    std::unordered_map<std::string, bool> IgnitionPlatform::callbacks_tf_ = {};
     std::unordered_map<std::string, as2::sensors::Camera> IgnitionPlatform::callbacks_camera_ = {};
     std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::LaserScan>> IgnitionPlatform::callbacks_laser_scan_ = {};
     std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::PointCloud2>> IgnitionPlatform::callbacks_point_cloud_ = {};
-
     std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::NavSatFix>> IgnitionPlatform::callbacks_gps_ = {};
+    std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::Imu>> IgnitionPlatform::callbacks_imu_ = {};
 
     IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform()
     {
@@ -63,7 +69,8 @@ namespace ignition_platform
         static auto timer_commands_ =
             this->create_wall_timer(
                 std::chrono::milliseconds(CMD_FREQ),
-                [this](){ this->sendCommand();});
+                [this]()
+                { this->sendCommand(); });
     };
 
     std::vector<std::string> split(const std::string &s, char delim)
@@ -90,11 +97,16 @@ namespace ignition_platform
         ignition_bridge_->setOdometryCallback(odometryCallback);
 
         std::string sensors_param = this->get_parameter("sensors").as_string();
+
         std::vector<std::string> sensor_config_list = split(sensors_param, ':');
+
+        std::string world_name = "";
 
         for (auto sensor_config : sensor_config_list)
         {
             std::vector<std::string> sensor_config_params = split(sensor_config, ',');
+
+            world_name = sensor_config_params[0];
 
             if (sensor_config_params.size() != 5)
             {
@@ -117,7 +129,8 @@ namespace ignition_platform
                     sensor_config_params[3],
                     sensor_config_params[4],
                     cameraCallback,
-                    cameraInfoCallback);
+                    cameraInfoCallback,
+                    cameraTFCallback);
             }
             else if (sensor_type == "lidar")
             {
@@ -134,7 +147,8 @@ namespace ignition_platform
                     sensor_config_params[3],
                     sensor_config_params[4],
                     laserScanCallback,
-                    pointCloudCallback);
+                    pointCloudCallback,
+                    lidarTFCallback);
             }
             else if (sensor_type == "gps")
             {
@@ -147,12 +161,59 @@ namespace ignition_platform
                     sensor_config_params[2],
                     sensor_config_params[3],
                     sensor_config_params[4],
-                    gpsCallback);
+                    gpsCallback,
+                    gpsTFCallback);
+            }
+            else if (sensor_type == "imu")
+            {
+                as2::sensors::Sensor<sensor_msgs::msg::Imu> imu_sensor(sensor_config_params[2], this);
+                callbacks_imu_.insert(std::make_pair(sensor_config_params[2], imu_sensor));
+
+                ignition_bridge_->addSensor(
+                    sensor_config_params[0],
+                    sensor_config_params[1],
+                    sensor_config_params[2],
+                    sensor_config_params[3],
+                    sensor_config_params[4],
+                    imuCallback,
+                    imuTFCallback);
             }
             else
             {
                 RCLCPP_WARN(this->get_logger(), "Sensor type not supported: %s", sensor_type.c_str());
+                continue;
             }
+            callbacks_tf_.insert(std::make_pair(sensor_config_params[2], true));
+        }
+
+        if (world_name != "")
+        {
+            imu_ptr_ =
+                std::make_unique<as2::sensors::Sensor<sensor_msgs::msg::Imu>>("imu", this);
+            ignition_bridge_->setImuCallback(imuSensorCallback, world_name);
+            imu_ptr_->setStaticTransform(
+                namespace_ + "/imu",
+                namespace_,
+                0.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, 0.0f, 0.1f);
+
+            air_pressure_ptr_ =
+                std::make_unique<as2::sensors::Sensor<sensor_msgs::msg::FluidPressure>>("air_pressure", this);
+            ignition_bridge_->setAirPressureCallback(airPressureSensorCallback, world_name);
+            air_pressure_ptr_->setStaticTransform(
+                namespace_ + "/magnetometer",
+                namespace_,
+                0.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, 0.0f, 0.1f);
+
+            magnetometer_ptr_ =
+                std::make_unique<as2::sensors::Sensor<sensor_msgs::msg::MagneticField>>("magnetometer", this);
+            ignition_bridge_->setMagnetometerCallback(magnetometerSensorCallback, world_name);
+            magnetometer_ptr_->setStaticTransform(
+                namespace_ + "/air_pressure",
+                namespace_,
+                0.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, 0.0f, 0.1f);
         }
 
         return;
@@ -176,7 +237,7 @@ namespace ignition_platform
             {
                 command_twist_msg_.twist.angular.z = -yaw_rate_limit_;
             }
-            
+
             Eigen::Vector3d twist_lineal_enu = Eigen::Vector3d(command_twist_msg_.twist.linear.x,
                                                                command_twist_msg_.twist.linear.y,
                                                                command_twist_msg_.twist.linear.z);
@@ -185,7 +246,7 @@ namespace ignition_platform
             command_twist_msg_.twist.linear.x = twist_lineal_flu(0);
             command_twist_msg_.twist.linear.y = twist_lineal_flu(1);
             command_twist_msg_.twist.linear.z = twist_lineal_flu(2);
-            
+
             ignition_bridge_->sendTwistMsg(command_twist_msg_.twist);
         }
         else if (control_in_.reference_frame == as2_msgs::msg::ControlMode::BODY_FLU_FRAME)
@@ -236,6 +297,30 @@ namespace ignition_platform
         ignition_bridge_->sendTwistMsg(twist_msg);
     }
 
+    bool IgnitionPlatform::checkTf(const std::string &sensor_name)
+    {
+        if (callbacks_tf_.empty())
+        {
+            ignition_bridge_->unsuscribePoseStatic();
+            return false;
+        }
+
+        // Check if sensor is in the tf map
+        auto sensor_list = callbacks_tf_.find(sensor_name);
+        if (sensor_list == callbacks_tf_.end())
+        {
+            return false;
+        }
+
+        // Check if sensor is already added
+        if (!sensor_list->second)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     void IgnitionPlatform::poseCallback(geometry_msgs::msg::PoseStamped &pose_msg)
     {
         pose_ptr_->updateData(pose_msg);
@@ -253,6 +338,24 @@ namespace ignition_platform
         return;
     };
 
+    void IgnitionPlatform::imuSensorCallback(sensor_msgs::msg::Imu &imu_msg)
+    {
+        imu_ptr_->updateData(imu_msg);
+        return;
+    };
+
+    void IgnitionPlatform::airPressureSensorCallback(sensor_msgs::msg::FluidPressure &air_pressure_msg)
+    {
+        air_pressure_ptr_->updateData(air_pressure_msg);
+        return;
+    };
+
+    void IgnitionPlatform::magnetometerSensorCallback(sensor_msgs::msg::MagneticField &magnetometer_msg)
+    {
+        magnetometer_ptr_->updateData(magnetometer_msg);
+        return;
+    };
+
     void IgnitionPlatform::cameraCallback(
         sensor_msgs::msg::Image &image_msg,
         const std::string &sensor_name)
@@ -266,6 +369,36 @@ namespace ignition_platform
         const std::string &sensor_name)
     {
         (callbacks_camera_.find(sensor_name)->second).setParameters(info_msg);
+        return;
+    };
+
+    void IgnitionPlatform::cameraTFCallback(
+        geometry_msgs::msg::TransformStamped &msg,
+        const std::string &sensor_name)
+    {
+        if (!checkTf(sensor_name))
+        {
+            return;
+        }
+
+        auto sensor = callbacks_camera_.find(sensor_name);
+        if (sensor == callbacks_camera_.end())
+        {
+            return;
+        }
+
+        sensor->second.setStaticTransform(
+            msg.child_frame_id,
+            msg.header.frame_id,
+            msg.transform.translation.x,
+            msg.transform.translation.y,
+            msg.transform.translation.z,
+            msg.transform.rotation.x,
+            msg.transform.rotation.y,
+            msg.transform.rotation.z,
+            msg.transform.rotation.w);
+
+        callbacks_tf_.erase(sensor_name);
         return;
     };
 
@@ -287,11 +420,121 @@ namespace ignition_platform
         return;
     };
 
+    void IgnitionPlatform::lidarTFCallback(
+        geometry_msgs::msg::TransformStamped &msg,
+        const std::string &sensor_name)
+    {
+        if (!checkTf(sensor_name))
+        {
+            return;
+        }
+
+        auto sensor_laser = callbacks_laser_scan_.find(sensor_name);
+        auto sensor_cloud = callbacks_point_cloud_.find(sensor_name);
+        if (sensor_laser == callbacks_laser_scan_.end() || sensor_cloud == callbacks_point_cloud_.end())
+        {
+            return;
+        }
+
+        sensor_laser->second.setStaticTransform(
+            msg.child_frame_id,
+            msg.header.frame_id,
+            msg.transform.translation.x,
+            msg.transform.translation.y,
+            msg.transform.translation.z,
+            msg.transform.rotation.x,
+            msg.transform.rotation.y,
+            msg.transform.rotation.z,
+            msg.transform.rotation.w);
+
+        sensor_cloud->second.setStaticTransform(
+            msg.child_frame_id + "_cloud",
+            msg.header.frame_id,
+            msg.transform.translation.x,
+            msg.transform.translation.y,
+            msg.transform.translation.z,
+            msg.transform.rotation.x,
+            msg.transform.rotation.y,
+            msg.transform.rotation.z,
+            msg.transform.rotation.w);
+
+        callbacks_tf_.erase(sensor_name);
+        return;
+    };
+
     void IgnitionPlatform::gpsCallback(
-        sensor_msgs::msg::NavSatFix &gps_msg, 
+        sensor_msgs::msg::NavSatFix &gps_msg,
         const std::string &sensor_name)
     {
         (callbacks_gps_.find(sensor_name)->second).updateData(gps_msg);
+        return;
+    };
+
+    void IgnitionPlatform::gpsTFCallback(
+        geometry_msgs::msg::TransformStamped &msg,
+        const std::string &sensor_name)
+    {
+        if (!checkTf(sensor_name))
+        {
+            return;
+        }
+
+        auto sensor = callbacks_gps_.find(sensor_name);
+        if (sensor == callbacks_gps_.end())
+        {
+            return;
+        }
+
+        sensor->second.setStaticTransform(
+            msg.child_frame_id,
+            msg.header.frame_id,
+            msg.transform.translation.x,
+            msg.transform.translation.y,
+            msg.transform.translation.z,
+            msg.transform.rotation.x,
+            msg.transform.rotation.y,
+            msg.transform.rotation.z,
+            msg.transform.rotation.w);
+
+        callbacks_tf_.erase(sensor_name);
+        return;
+    };
+
+    void IgnitionPlatform::imuCallback(
+        sensor_msgs::msg::Imu &imu_msg,
+        const std::string &sensor_name)
+    {
+        (callbacks_imu_.find(sensor_name)->second).updateData(imu_msg);
+        return;
+    };
+    
+    void IgnitionPlatform::imuTFCallback(
+        geometry_msgs::msg::TransformStamped &msg,
+        const std::string &sensor_name)
+    {
+        if (!checkTf(sensor_name))
+        {
+            return;
+        }
+
+        auto sensor = callbacks_imu_.find(sensor_name);
+        if (sensor == callbacks_imu_.end())
+        {
+            return;
+        }
+
+        sensor->second.setStaticTransform(
+            msg.child_frame_id,
+            msg.header.frame_id,
+            msg.transform.translation.x,
+            msg.transform.translation.y,
+            msg.transform.translation.z,
+            msg.transform.rotation.x,
+            msg.transform.rotation.y,
+            msg.transform.rotation.z,
+            msg.transform.rotation.w);
+
+        callbacks_tf_.erase(sensor_name);
         return;
     };
 }

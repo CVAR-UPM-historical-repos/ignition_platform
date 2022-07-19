@@ -55,10 +55,17 @@
 #include <as2_core/tf_utils.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <geometry_msgs/msg/transform.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <image_transport/image_transport.hpp>
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
+#include <tf2/exceptions.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/static_transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
 
 #include "ignition_bridge.hpp"
 
@@ -84,25 +91,44 @@ namespace ignition_platform
 
         static std::unique_ptr<as2::sensors::Sensor<geometry_msgs::msg::PoseStamped>> pose_ptr_;
         static void poseCallback(geometry_msgs::msg::PoseStamped &msg);
+        
+        static std::unordered_map<std::string, bool> callbacks_tf_;
+        static void poseStaticCallback(tf2_msgs::msg::TFMessage &msg);
+        static bool checkTf(const std::string &sensor_name);
 
         static std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> odometry_raw_estimation_ptr_;
         static void odometryCallback(nav_msgs::msg::Odometry &msg);
 
+        static std::unique_ptr<as2::sensors::Sensor<sensor_msgs::msg::Imu>> imu_ptr_;
+        static void imuSensorCallback(sensor_msgs::msg::Imu &msg);
+
+        static std::unique_ptr<as2::sensors::Sensor<sensor_msgs::msg::FluidPressure>> air_pressure_ptr_;
+        static void airPressureSensorCallback(sensor_msgs::msg::FluidPressure &msg);
+
+        static std::unique_ptr<as2::sensors::Sensor<sensor_msgs::msg::MagneticField>> magnetometer_ptr_;
+        static void magnetometerSensorCallback(sensor_msgs::msg::MagneticField &msg);
+
         static std::unordered_map<std::string, as2::sensors::Camera> callbacks_camera_;
         static void cameraCallback(sensor_msgs::msg::Image &msg, const std::string &sensor_name);
         static void cameraInfoCallback(sensor_msgs::msg::CameraInfo &msg, const std::string &sensor_name);
+        static void cameraTFCallback(geometry_msgs::msg::TransformStamped &msg, const std::string &sensor_name);
 
         static std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::LaserScan>> callbacks_laser_scan_;
         static void laserScanCallback(sensor_msgs::msg::LaserScan &msg, const std::string &sensor_name);
-
         static std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::PointCloud2>> callbacks_point_cloud_;
         static void pointCloudCallback(sensor_msgs::msg::PointCloud2 &msg, const std::string &sensor_name);
+        static void lidarTFCallback(geometry_msgs::msg::TransformStamped &msg, const std::string &sensor_name);
 
         static std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::NavSatFix>> callbacks_gps_;
         static void gpsCallback(sensor_msgs::msg::NavSatFix &msg, const std::string &sensor_name);
+        static void gpsTFCallback(geometry_msgs::msg::TransformStamped &msg, const std::string &sensor_name);
+
+        static std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::Imu>> callbacks_imu_;
+        static void imuCallback(sensor_msgs::msg::Imu &msg, const std::string &sensor_name);
+        static void imuTFCallback(geometry_msgs::msg::TransformStamped &msg, const std::string &sensor_name);
 
     private:
-        std::shared_ptr<IgnitionBridge> ignition_bridge_;
+        static std::shared_ptr<IgnitionBridge> ignition_bridge_;
         static bool odometry_info_received_;
         as2_msgs::msg::ControlMode control_in_;
         static geometry_msgs::msg::Quaternion self_orientation_;
