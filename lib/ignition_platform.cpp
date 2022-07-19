@@ -193,7 +193,7 @@ namespace ignition_platform
             ignition_bridge_->setImuCallback(imuSensorCallback, world_name);
             imu_ptr_->setStaticTransform(
                 namespace_ + "/imu",
-                namespace_,
+                namespace_ + "/base_link",
                 0.0f, 0.0f, 0.0f,
                 0.0f, 0.0f, 0.0f, 0.1f);
 
@@ -202,7 +202,7 @@ namespace ignition_platform
             ignition_bridge_->setAirPressureCallback(airPressureSensorCallback, world_name);
             air_pressure_ptr_->setStaticTransform(
                 namespace_ + "/magnetometer",
-                namespace_,
+                namespace_ + "/base_link",
                 0.0f, 0.0f, 0.0f,
                 0.0f, 0.0f, 0.0f, 0.1f);
 
@@ -211,7 +211,7 @@ namespace ignition_platform
             ignition_bridge_->setMagnetometerCallback(magnetometerSensorCallback, world_name);
             magnetometer_ptr_->setStaticTransform(
                 namespace_ + "/air_pressure",
-                namespace_,
+                namespace_ + "/base_link",
                 0.0f, 0.0f, 0.0f,
                 0.0f, 0.0f, 0.0f, 0.1f);
         }
