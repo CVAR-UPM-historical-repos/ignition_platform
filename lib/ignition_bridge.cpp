@@ -225,8 +225,7 @@ namespace ignition_platform
             camera_topic,
             IgnitionBridge::ignitionCameraCallback);
 
-
-        std::string camera_info_topic = "/world/" + world_name + "/model/" + name_space + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/image";
+        std::string camera_info_topic = "/world/" + world_name + "/model/" + name_space + "/model/" + sensor_name + "/link/" + link_name + "/sensor/" + sensor_type + "/camera_info";
         callbacks_camera_info_.insert(std::make_pair(camera_info_topic, cameraInfoCallback));
         callbacks_sensors_names_.insert(std::make_pair(camera_info_topic, sensor_name));
         ign_node_ptr_->Subscribe(

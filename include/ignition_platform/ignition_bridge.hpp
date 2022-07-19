@@ -179,6 +179,7 @@ namespace ignition_platform
         static std::unordered_map<std::string, tfCallbackType> callbacks_sensors_transform_;
 
         static void ignitionCameraCallback(const ignition::msgs::Image &msg, const ignition::transport::MessageInfo &_info);
+
         static std::unordered_map<std::string, cameraCallbackType> callbacks_camera_;
         static void ignitionCameraInfoCallback(const ignition::msgs::CameraInfo &msg, const ignition::transport::MessageInfo &_info);
         static std::unordered_map<std::string, cameraInfoCallbackType> callbacks_camera_info_;
