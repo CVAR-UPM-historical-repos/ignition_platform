@@ -52,7 +52,15 @@ namespace ignition_platform
           ns.pop_back();
         }
       }
-
+      else if (frame_id.find("base_link") != std::string::npos)
+      {
+        ns = frame_id.substr(0, frame_id.find("base_link/"));
+        // remove / from the end of the namespace
+        if (ns.back() == '/')
+        {
+          ns.pop_back();
+        }
+      }
       if (field_to_append != "")
       {
         frame_id = ns + "/" + sensor_name + "/" + field_to_append;
@@ -160,6 +168,9 @@ namespace ignition_platform
     {
         sensor_msgs::msg::Imu imu_msg;
         ros_ign_bridge::convert_ign_to_ros(msg, imu_msg);
+        static auto frame_id = refactorizeFrameId(imu_msg.header.frame_id, "imu");
+        std::cout << "frame_id: " << frame_id << std::endl;
+        imu_msg.header.frame_id= frame_id;
         imuCallback_(imu_msg);
         return;
     };
