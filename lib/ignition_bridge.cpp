@@ -154,8 +154,6 @@ void IgnitionBridge::setImuCallback(imuSensorCallbackType callback, std::string 
 void IgnitionBridge::ignitionImuSensorCallback(const ignition::msgs::IMU &msg) {
   sensor_msgs::msg::Imu imu_msg;
   ros_ign_bridge::convert_ign_to_ros(msg, imu_msg);
-  static auto frame_id = refactorizeFrameId(imu_msg.header.frame_id, "imu");
-  imu_msg.header.frame_id = frame_id;
   imuCallback_(imu_msg);
   return;
 };
@@ -255,10 +253,6 @@ void IgnitionBridge::ignitionCameraCallback(const ignition::msgs::Image &msg,
   auto callback = callbacks_camera_.find(msg_info.Topic());
   auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
 
-  static auto frame_id =
-      refactorizeFrameId(ros_image_msg.header.frame_id, sensor_name->second, "camera_link");
-  ros_image_msg.header.frame_id = frame_id;
-
   if (callback != callbacks_camera_.end()) {
     callback->second(ros_image_msg, sensor_name->second);
   }
@@ -271,12 +265,6 @@ void IgnitionBridge::ignitionCameraInfoCallback(const ignition::msgs::CameraInfo
   ros_ign_bridge::convert_ign_to_ros(msg, ros_camera_info_msg);
   auto callback = callbacks_camera_info_.find(msg_info.Topic());
   auto sensor_name = callbacks_sensors_names_.find(msg_info.Topic());
-
-  static auto frame_id =
-      refactorizeFrameId(ros_camera_info_msg.header.frame_id, sensor_name->second, "camera_link");
-  ros_camera_info_msg.header.frame_id = frame_id;
-
-  // std::cout << "final_frame_id: " << final_frame_id << std::endl;
 
   if (callback != callbacks_camera_info_.end()) {
     callback->second(ros_camera_info_msg, sensor_name->second);

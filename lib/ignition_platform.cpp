@@ -340,18 +340,21 @@ namespace ignition_platform
 
     void IgnitionPlatform::imuSensorCallback(sensor_msgs::msg::Imu &imu_msg)
     {
+        imu_msg.header.frame_id = generateTfName(namespace_, "imu");
         imu_ptr_->updateData(imu_msg);
         return;
     };
 
     void IgnitionPlatform::airPressureSensorCallback(sensor_msgs::msg::FluidPressure &air_pressure_msg)
     {
+        air_pressure_msg.header.frame_id = generateTfName(namespace_, "air_pressure");
         air_pressure_ptr_->updateData(air_pressure_msg);
         return;
     };
 
     void IgnitionPlatform::magnetometerSensorCallback(sensor_msgs::msg::MagneticField &magnetometer_msg)
     {
+        magnetometer_msg.header.frame_id = generateTfName(namespace_, "magnetometer");
         magnetometer_ptr_->updateData(magnetometer_msg);
         return;
     };
@@ -360,6 +363,7 @@ namespace ignition_platform
         sensor_msgs::msg::Image &image_msg,
         const std::string &sensor_name)
     {
+        image_msg.header.frame_id = generateTfName(namespace_, sensor_name + "/camera_link");
         (callbacks_camera_.find(sensor_name)->second).updateData(image_msg);
         return;
     };
@@ -368,6 +372,7 @@ namespace ignition_platform
         sensor_msgs::msg::CameraInfo &info_msg,
         const std::string &sensor_name)
     {
+        info_msg.header.frame_id = generateTfName(namespace_, sensor_name + "/camera_link");
         (callbacks_camera_.find(sensor_name)->second).setParameters(info_msg);
         return;
     };
@@ -406,7 +411,7 @@ namespace ignition_platform
         sensor_msgs::msg::LaserScan &laser_scan_msg,
         const std::string &sensor_name)
     {
-        laser_scan_msg.header.frame_id = "map";
+        laser_scan_msg.header.frame_id = generateTfName(namespace_, sensor_name);
         (callbacks_laser_scan_.find(sensor_name)->second).updateData(laser_scan_msg);
         return;
     };
@@ -415,7 +420,7 @@ namespace ignition_platform
         sensor_msgs::msg::PointCloud2 &point_cloud_msg,
         const std::string &sensor_name)
     {
-        point_cloud_msg.header.frame_id = "map";
+        point_cloud_msg.header.frame_id = generateTfName(namespace_, sensor_name);
         (callbacks_point_cloud_.find(sensor_name)->second).updateData(point_cloud_msg);
         return;
     };
@@ -466,6 +471,7 @@ namespace ignition_platform
         sensor_msgs::msg::NavSatFix &gps_msg,
         const std::string &sensor_name)
     {
+        gps_msg.header.frame_id = "wgs86";
         (callbacks_gps_.find(sensor_name)->second).updateData(gps_msg);
         return;
     };
@@ -504,6 +510,7 @@ namespace ignition_platform
         sensor_msgs::msg::Imu &imu_msg,
         const std::string &sensor_name)
     {
+        imu_msg.header.frame_id = generateTfName(namespace_, sensor_name);
         (callbacks_imu_.find(sensor_name)->second).updateData(imu_msg);
         return;
     };
