@@ -82,50 +82,23 @@ namespace ignition_platform
         ~IgnitionPlatform(){};
 
     public:
-
         void configureSensors() override;
         bool ownSendCommand() override;
         bool ownSetArmingState(bool state) override;
         bool ownSetOffboardControl(bool offboard) override;
         bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &msg) override;
 
-        static std::unique_ptr<as2::sensors::Sensor<geometry_msgs::msg::PoseStamped>> pose_ptr_;
-        static void poseCallback(geometry_msgs::msg::PoseStamped &msg);
-        
-        static std::unordered_map<std::string, bool> callbacks_tf_;
-        static void poseStaticCallback(tf2_msgs::msg::TFMessage &msg);
-        static bool checkTf(const std::string &sensor_name);
+        rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
 
-        static std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> odometry_raw_estimation_ptr_;
-        static void odometryCallback(nav_msgs::msg::Odometry &msg);
+        // rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+        static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_pub_;
+        static rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr ground_truth_twist_pub_;
 
-        static std::unique_ptr<as2::sensors::Sensor<sensor_msgs::msg::Imu>> imu_ptr_;
-        static void imuSensorCallback(sensor_msgs::msg::Imu &msg);
+        // static std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> odometry_raw_estimation_ptr_;
+        // static void odometryCallback(nav_msgs::msg::Odometry &msg);
 
-        static std::unique_ptr<as2::sensors::Sensor<sensor_msgs::msg::FluidPressure>> air_pressure_ptr_;
-        static void airPressureSensorCallback(sensor_msgs::msg::FluidPressure &msg);
-
-        static std::unique_ptr<as2::sensors::Sensor<sensor_msgs::msg::MagneticField>> magnetometer_ptr_;
-        static void magnetometerSensorCallback(sensor_msgs::msg::MagneticField &msg);
-
-        static std::unordered_map<std::string, as2::sensors::Camera> callbacks_camera_;
-        static void cameraCallback(sensor_msgs::msg::Image &msg, const std::string &sensor_name);
-        static void cameraInfoCallback(sensor_msgs::msg::CameraInfo &msg, const std::string &sensor_name);
-        static void cameraTFCallback(geometry_msgs::msg::TransformStamped &msg, const std::string &sensor_name);
-
-        static std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::LaserScan>> callbacks_laser_scan_;
-        static void laserScanCallback(sensor_msgs::msg::LaserScan &msg, const std::string &sensor_name);
-        static std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::PointCloud2>> callbacks_point_cloud_;
-        static void pointCloudCallback(sensor_msgs::msg::PointCloud2 &msg, const std::string &sensor_name);
-        static void lidarTFCallback(geometry_msgs::msg::TransformStamped &msg, const std::string &sensor_name);
-
-        static std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::NavSatFix>> callbacks_gps_;
-        static void gpsCallback(sensor_msgs::msg::NavSatFix &msg, const std::string &sensor_name);
-        static void gpsTFCallback(geometry_msgs::msg::TransformStamped &msg, const std::string &sensor_name);
-
-        static std::unordered_map<std::string, as2::sensors::Sensor<sensor_msgs::msg::Imu>> callbacks_imu_;
-        static void imuCallback(sensor_msgs::msg::Imu &msg, const std::string &sensor_name);
-        static void imuTFCallback(geometry_msgs::msg::TransformStamped &msg, const std::string &sensor_name);
+        static std::unique_ptr<as2::sensors::Sensor<geometry_msgs::msg::Pose>> ground_truth_ptr_;
+        static void groundTruthCallback(geometry_msgs::msg::Pose &msg);
 
     private:
         static std::shared_ptr<IgnitionBridge> ignition_bridge_;

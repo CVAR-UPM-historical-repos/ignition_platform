@@ -7,16 +7,19 @@ from launch_ros.substitutions import FindPackageShare
 import subprocess
 
 
-def get_sensors(drone_namespace):
-    sensors  = set()
+def get_world():
 
     cmd = f"ign topic -l"
     output = subprocess.run(cmd.split(), capture_output=True, text=True)
     for line in output.stdout.split('\n'):
-        if f"{drone_namespace}/model" in line:
-            tokens = line.split('/')
-            sensors.add(f"{tokens[2]},{tokens[4]},{tokens[6]},{tokens[8]},{tokens[10]}")
-    return repr(sensors).replace("', '", ":")[2:-2] if len(sensors) else ""
+        words = line.split('/')
+        if len(words) != 5:
+            continue
+        
+        if (words[1] == 'world' and words[3] == 'pose' and words[4] == 'info'):
+            world_name = words[2]
+            return world_name
+    return ""
 
 
 def get_platform_node(context, *args, **kwargs):
@@ -34,7 +37,7 @@ def get_platform_node(context, *args, **kwargs):
             "mass": LaunchConfiguration('mass'),
             "max_thrust": LaunchConfiguration('max_thrust'),
             "min_thrust":  LaunchConfiguration('min_thrust'),
-            "sensors": get_sensors(drone_namespace)
+            "world": get_world()
             }]
     )
     return [node]
