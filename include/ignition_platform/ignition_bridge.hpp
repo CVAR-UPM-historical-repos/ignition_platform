@@ -82,6 +82,11 @@ namespace ignition_platform
         static void ignitionOdometryCallback(const ignition::msgs::Odometry &msg);
         static groundTruthCallbackType groundTruthCallback_;
         static void ignitionGroundTruthCallback(const ignition::msgs::Pose_V &msg);
+
+    public:
+        ignition::transport::v11::Node::Publisher command_twist_pub_;
+        void sendTwistMsg(const geometry_msgs::msg::Twist &msg);
+
     };
 }
 

@@ -54,12 +54,20 @@ namespace ignition_platform
     ign_node_ptr_->Subscribe("/model" + name_space + "/odometry",
                              IgnitionBridge::ignitionOdometryCallback);
 
-    RCLCPP_INFO(rclcpp::get_logger("ignition_bridge"), "Suscribe to model%s/odometry", name_space.c_str());
-
     ign_node_ptr_->Subscribe("/world/" + world_name + "/pose/info",
                              IgnitionBridge::ignitionGroundTruthCallback);
-    RCLCPP_INFO(rclcpp::get_logger("ignition_bridge"), "Suscribe to /world/%s/pose/info", world_name.c_str());
+    
 
+    // Initialize publishers
+    command_twist_pub_ = ign_node_ptr_->Advertise<ignition::msgs::Twist>("model" + name_space + "/cmd_vel");
+
+    return;
+  };
+
+  void IgnitionBridge::sendTwistMsg(const geometry_msgs::msg::Twist &ros_twist_msg) {
+    ignition::msgs::Twist ign_twist_msg;
+    ros_ign_bridge::convert_ros_to_ign(ros_twist_msg, ign_twist_msg);
+    command_twist_pub_.Publish(ign_twist_msg);
     return;
   };
 
@@ -71,7 +79,6 @@ namespace ignition_platform
 
   void IgnitionBridge::ignitionOdometryCallback(const ignition::msgs::Odometry &msg)
   {
-    RCLCPP_INFO(rclcpp::get_logger("ignition_bridge"), "Send odometry message");
     nav_msgs::msg::Odometry odom_msg;
     ros_ign_bridge::convert_ign_to_ros(msg, odom_msg);
     odometryCallback_(odom_msg);
@@ -86,12 +93,10 @@ namespace ignition_platform
 
   void IgnitionBridge::ignitionGroundTruthCallback(const ignition::msgs::Pose_V &msg)
   {
-    RCLCPP_INFO(rclcpp::get_logger("ignition_bridge"), "Send ground truth pose");
     // Remove firts element of name_space_
     std::string name_space_2 = name_space_.substr(1);
     for (auto const &p : msg.pose())
     {
-      RCLCPP_INFO(rclcpp::get_logger("ignition_bridge"), "Pose name: %s", p.name().c_str());
       if (p.name() == name_space_2)
       {
         geometry_msgs::msg::Pose pose;
@@ -100,7 +105,6 @@ namespace ignition_platform
         return;
       }
     }
-    RCLCPP_WARN(rclcpp::get_logger("ignition_bridge"), "No pose found for %s", name_space_2.c_str());
     return;
   };
 

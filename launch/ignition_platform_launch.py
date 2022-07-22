@@ -37,6 +37,9 @@ def get_platform_node(context, *args, **kwargs):
             "mass": LaunchConfiguration('mass'),
             "max_thrust": LaunchConfiguration('max_thrust'),
             "min_thrust":  LaunchConfiguration('min_thrust'),
+            "imu_topic": LaunchConfiguration('imu_topic'),
+            "use_odom_plugin": LaunchConfiguration('use_odom_plugin'),
+            "use_ground_truth": LaunchConfiguration('use_ground_truth'),
             "world": get_world()
             }]
     )
@@ -54,6 +57,9 @@ def generate_launch_description():
         DeclareLaunchArgument('max_thrust', default_value='15.0'),
         DeclareLaunchArgument('min_thrust', default_value='0.15'),
         DeclareLaunchArgument('control_modes_file', default_value=config),
-        
+        DeclareLaunchArgument('imu_topic', default_value='imu/data'),
+        DeclareLaunchArgument('use_odom_plugin', default_value='false'),
+        DeclareLaunchArgument('use_ground_truth', default_value='true'),
+                
         OpaqueFunction(function=get_platform_node)
     ])
