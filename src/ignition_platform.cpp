@@ -260,13 +260,16 @@ namespace ignition_platform
 
     void IgnitionPlatform::imuCallback(const sensor_msgs::msg::Imu &msg)
     {
-        imu_msg_->angular_velocity = msg.angular_velocity;
-        imu_msg_->linear_acceleration = msg.linear_acceleration;
-        imu_msg_->orientation = msg.orientation;
-        imu_msg_->header.stamp = msg.header.stamp;
-        imu_msg_->header.frame_id = msg.header.frame_id;
+      if (!imu_info_received_){
+        imu_msg_ = std::make_unique<sensor_msgs::msg::Imu>(msg);
         imu_info_received_ = true;
-        return;
+      } 
+      imu_msg_->angular_velocity = msg.angular_velocity;
+      imu_msg_->linear_acceleration = msg.linear_acceleration;
+      imu_msg_->orientation = msg.orientation;
+      imu_msg_->header.stamp = msg.header.stamp;
+      imu_msg_->header.frame_id = msg.header.frame_id;
+      return;
     }
 
 }
