@@ -62,8 +62,8 @@ namespace ignition_platform
 
         this->configureSensors();
 
-        // twist_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(namespace_ + "/cmd_vel",
-        //                                                                rclcpp::QoS(1));
+        twist_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(namespace_ + "/cmd_vel",
+                                                                       rclcpp::QoS(1));
         
         ground_truth_pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
             as2_names::topics::ground_truth::pose,
@@ -141,12 +141,7 @@ namespace ignition_platform
             command_twist_msg_.twist.linear.y = twist_lineal_flu(1);
             command_twist_msg_.twist.linear.z = twist_lineal_flu(2);
 
-            RCLCPP_INFO(this->get_logger(), "Sending command: %f %f %f",
-                        command_twist_msg_.twist.linear.x,
-                        command_twist_msg_.twist.linear.y,
-                        command_twist_msg_.twist.linear.z);
             // ignition_bridge_->sendTwistMsg(command_twist_msg_.twist);
-
             twist_pub_->publish(command_twist_msg_.twist);
         }
         else if (control_in_.reference_frame == as2_msgs::msg::ControlMode::BODY_FLU_FRAME)
