@@ -229,9 +229,19 @@ namespace ignition_platform
         delta_pose.position.z = pose_msg.position.z - last_pose_msg.position.z;
         last_pose_msg = pose_msg;
 
-        twist_msg_enu.linear.x = delta_pose.position.x / dt;
-        twist_msg_enu.linear.y = delta_pose.position.y / dt;
-        twist_msg_enu.linear.z = delta_pose.position.z / dt;
+        static auto last_vx = delta_pose.position.x / dt;
+        static auto last_vy = delta_pose.position.y / dt;
+        static auto last_vz = delta_pose.position.z / dt;
+
+        const double alpha = 0.1f ;
+
+        twist_msg_enu.linear.x = alpha * (delta_pose.position.x / dt) + (1 - alpha) * last_vx;
+        twist_msg_enu.linear.y = alpha * (delta_pose.position.y / dt) + (1 - alpha) * last_vy;
+        twist_msg_enu.linear.z = alpha * (delta_pose.position.z / dt) + (1 - alpha) * last_vz;
+
+        last_vx = twist_msg_enu.linear.x;
+        last_vy = twist_msg_enu.linear.y;
+        last_vz = twist_msg_enu.linear.z;
 
         // Set angular velocity in ENU frame
         twist_msg_enu.angular = imu_msg_->angular_velocity;
