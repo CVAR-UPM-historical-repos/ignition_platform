@@ -101,8 +101,14 @@ namespace ignition_platform
         static std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> odometry_raw_estimation_ptr_;
         static void odometryCallback(nav_msgs::msg::Odometry &msg);
 
-        static std::unique_ptr<as2::sensors::Sensor<geometry_msgs::msg::Pose>> ground_truth_ptr_;
         static void groundTruthCallback(geometry_msgs::msg::Pose &msg);
+
+        static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_usv_pub_;
+        static rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr ground_truth_twist_usv_pub_;
+        static void usvCallback(geometry_msgs::msg::Pose &msg);
+
+        static void targetACallback(geometry_msgs::msg::Pose &msg);
+        static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_targetA_pub_;
 
     private:
         static std::shared_ptr<IgnitionBridge> ignition_bridge_;

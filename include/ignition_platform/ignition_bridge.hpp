@@ -76,6 +76,11 @@ namespace ignition_platform
         void setOdometryCallback(odometryCallbackType callback);
         void setGroundTruthCallback(groundTruthCallbackType callback);
 
+        void setUSVCallback(groundTruthCallbackType callback);
+        static groundTruthCallbackType usvCallback_;
+        void setTargetACallback(groundTruthCallbackType callback);
+        static groundTruthCallbackType targetACallback_;
+
     private:
         // Ignition callbacks
         static odometryCallbackType odometryCallback_;

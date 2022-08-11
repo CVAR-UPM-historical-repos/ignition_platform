@@ -43,6 +43,10 @@ namespace ignition_platform
   odometryCallbackType IgnitionBridge::odometryCallback_ = [](nav_msgs::msg::Odometry &msg) {};
   groundTruthCallbackType IgnitionBridge::groundTruthCallback_ = [](geometry_msgs::msg::Pose &msg) {};
 
+  groundTruthCallbackType IgnitionBridge::usvCallback_ = [](geometry_msgs::msg::Pose &msg) {};
+  groundTruthCallbackType IgnitionBridge::targetACallback_ = [](geometry_msgs::msg::Pose &msg) {};
+
+
   IgnitionBridge::IgnitionBridge(std::string name_space, std::string world_name)
   {
     name_space_ = name_space;
@@ -91,6 +95,18 @@ namespace ignition_platform
     return;
   };
 
+  void IgnitionBridge::setUSVCallback(groundTruthCallbackType callback)
+  {
+    usvCallback_ = callback;
+    return;
+  };
+
+  void IgnitionBridge::setTargetACallback(groundTruthCallbackType callback)
+  {
+    targetACallback_ = callback;
+    return;
+  };
+
   void IgnitionBridge::ignitionGroundTruthCallback(const ignition::msgs::Pose_V &msg)
   {
     // Remove firts element of name_space_
@@ -102,6 +118,20 @@ namespace ignition_platform
         geometry_msgs::msg::Pose pose;
         ros_ign_bridge::convert_ign_to_ros(p, pose);
         groundTruthCallback_(pose);
+        return;
+      }
+      else if (p.name() == "usv")
+      {
+        geometry_msgs::msg::Pose pose;
+        ros_ign_bridge::convert_ign_to_ros(p, pose);
+        usvCallback_(pose);
+        return;
+      }
+      else if (p.name() == "target_a")
+      {
+        geometry_msgs::msg::Pose pose;
+        ros_ign_bridge::convert_ign_to_ros(p, pose);
+        targetACallback_(pose);
         return;
       }
     }

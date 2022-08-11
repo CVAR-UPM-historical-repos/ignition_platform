@@ -49,6 +49,10 @@ namespace ignition_platform
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr IgnitionPlatform::ground_truth_pose_pub_ = nullptr;
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr IgnitionPlatform::ground_truth_twist_pub_ = nullptr;
 
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr IgnitionPlatform::ground_truth_pose_usv_pub_ = nullptr;
+    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr IgnitionPlatform::ground_truth_twist_usv_pub_ = nullptr;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr IgnitionPlatform::ground_truth_pose_targetA_pub_ = nullptr;
+
     std::unique_ptr<sensor_msgs::msg::Imu> IgnitionPlatform::imu_msg_ = nullptr;
 
     IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform()
@@ -109,6 +113,9 @@ namespace ignition_platform
         {
             ignition_bridge_->setGroundTruthCallback(groundTruthCallback);
         }
+
+        ignition_bridge_->setUSVCallback(usvCallback);
+        ignition_bridge_->setTargetACallback(targetACallback);
 
         return;
     };
@@ -275,6 +282,64 @@ namespace ignition_platform
       imu_msg_->header.stamp = msg.header.stamp;
       imu_msg_->header.frame_id = msg.header.frame_id;
       return;
+    }
+
+    void IgnitionPlatform::usvCallback(geometry_msgs::msg::Pose &pose_msg)
+    {
+        geometry_msgs::msg::Pose last_pose;
+        geometry_msgs::msg::Twist twist_msg_enu;
+
+        // Derive twist from ground truth
+        static auto last_time_usv = rclcpp::Clock().now();
+        auto current_time = rclcpp::Clock().now();
+        auto dt = (current_time - last_time_usv).seconds();
+        last_time_usv = current_time;
+
+        static auto last_pose_msg_usv = pose_msg;
+        geometry_msgs::msg::Pose delta_pose;
+        delta_pose.position.x = pose_msg.position.x - last_pose_msg_usv.position.x;
+        delta_pose.position.y = pose_msg.position.y - last_pose_msg_usv.position.y;
+        delta_pose.position.z = pose_msg.position.z - last_pose_msg_usv.position.z;
+        last_pose_msg_usv = pose_msg;
+
+        static auto last_vx_usv = delta_pose.position.x / dt;
+        static auto last_vy_usv = delta_pose.position.y / dt;
+        static auto last_vz_usv = delta_pose.position.z / dt;
+
+        const double alpha = 0.1f ;
+
+        twist_msg_enu.linear.x = alpha * (delta_pose.position.x / dt) + (1 - alpha) * last_vx_usv;
+        twist_msg_enu.linear.y = alpha * (delta_pose.position.y / dt) + (1 - alpha) * last_vy_usv;
+        twist_msg_enu.linear.z = alpha * (delta_pose.position.z / dt) + (1 - alpha) * last_vz_usv;
+
+        last_vx_usv = twist_msg_enu.linear.x;
+        last_vy_usv = twist_msg_enu.linear.y;
+        last_vz_usv = twist_msg_enu.linear.z;
+
+        geometry_msgs::msg::PoseStamped pose_stamped_msg;
+        pose_stamped_msg.header.frame_id = "earth";
+        pose_stamped_msg.header.stamp = rclcpp::Clock().now();
+        pose_stamped_msg.pose = pose_msg;
+        ground_truth_pose_usv_pub_->publish(pose_stamped_msg);
+
+        geometry_msgs::msg::TwistStamped twist_stamped_msg;
+        twist_stamped_msg.header.frame_id = "earth";
+        twist_stamped_msg.header.stamp = rclcpp::Clock().now();
+        twist_stamped_msg.twist = twist_msg_enu;
+        ground_truth_twist_usv_pub_->publish(twist_stamped_msg);
+
+        return;
+    }
+
+    void IgnitionPlatform::targetACallback(geometry_msgs::msg::Pose &pose_msg)
+    {
+        geometry_msgs::msg::PoseStamped pose_stamped_msg;
+        pose_stamped_msg.header.frame_id = "earth";
+        pose_stamped_msg.header.stamp = rclcpp::Clock().now();
+        pose_stamped_msg.pose = pose_msg;
+        ground_truth_pose_targetA_pub_->publish(pose_stamped_msg);
+
+        return;
     }
 
 }
