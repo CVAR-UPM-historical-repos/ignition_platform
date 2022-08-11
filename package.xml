@@ -9,14 +9,8 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>rclcpp</depend>
-  <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
-  <depend>nav_msgs</depend>
   <depend>as2_core</depend>
-  <depend>image_transport</depend>
-  <depend>ros_ign_bridge</depend>
-  <depend>ros_ign_gazebo</depend>
-  <depend>tf2</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

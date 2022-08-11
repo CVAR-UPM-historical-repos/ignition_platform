@@ -38,50 +38,20 @@
 
 namespace ignition_platform
 {
-    std::shared_ptr<IgnitionBridge> IgnitionPlatform::ignition_bridge_ = nullptr;
-    bool IgnitionPlatform::odometry_info_received_ = false;
-    bool IgnitionPlatform::imu_info_received_ = false;
-    geometry_msgs::msg::Quaternion IgnitionPlatform::self_orientation_ = geometry_msgs::msg::Quaternion();
-    std::string IgnitionPlatform::namespace_ = "";
-
-    std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> IgnitionPlatform::odometry_raw_estimation_ptr_ = nullptr;
-
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr IgnitionPlatform::ground_truth_pose_pub_ = nullptr;
-    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr IgnitionPlatform::ground_truth_twist_pub_ = nullptr;
-
-    std::unique_ptr<sensor_msgs::msg::Imu> IgnitionPlatform::imu_msg_ = nullptr;
-
     IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform()
     {
-        this->declare_parameter<std::string>("world");
-        std::string world_param = this->get_parameter("world").as_string();
+        this->declare_parameter<std::string>("cmd_vel_topic");
+        std::string cmd_vel_topic_param = this->get_parameter("cmd_vel_topic").as_string();
 
-        namespace_ = this->get_namespace();
+        twist_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(
+            this->generate_global_name(cmd_vel_topic_param),
+            rclcpp::QoS(1));
         
-        ignition_bridge_ = std::make_shared<IgnitionBridge>(namespace_, world_param);
-
-        this->configureSensors();
-
-        twist_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(namespace_ + "/cmd_vel",
-                                                                       rclcpp::QoS(1));
+        pose_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+                    as2_names::topics::self_localization::pose,
+                    as2_names::topics::self_localization::qos,
+                    std::bind(&IgnitionPlatform::poseCallback, this, std::placeholders::_1));
         
-        ground_truth_pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
-            as2_names::topics::ground_truth::pose,
-            as2_names::topics::ground_truth::qos);
-
-        ground_truth_twist_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>(
-            as2_names::topics::ground_truth::twist,
-            as2_names::topics::ground_truth::qos);
-
-
-
-        this->declare_parameter<std::string>("imu_topic");
-        std::string imu_topic_param = this->get_parameter("imu_topic").as_string();
-        imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-                    this->generate_global_name(imu_topic_param),
-                    as2_names::topics::sensor_measurements::qos,
-                    std::bind(&IgnitionPlatform::imuCallback, this, std::placeholders::_1));
-
         // Timer to send command
         static auto timer_commands_ =
             this->create_wall_timer(
@@ -90,28 +60,6 @@ namespace ignition_platform
                 { this->sendCommand(); });
     };
 
-    void IgnitionPlatform::configureSensors()
-    {
-        this->declare_parameter<bool>("use_odom_plugin");
-        bool use_odom_plugin_param = this->get_parameter("use_odom_plugin").as_bool();
-
-        if (use_odom_plugin_param)
-        {
-            odometry_raw_estimation_ptr_ =
-                std::make_unique<as2::sensors::Sensor<nav_msgs::msg::Odometry>>(
-                    "odom", this);
-            ignition_bridge_->setOdometryCallback(odometryCallback);
-        }
-
-        this->declare_parameter<bool>("use_ground_truth");
-        bool use_ground_truth_param = this->get_parameter("use_ground_truth").as_bool();
-        if (use_ground_truth_param)
-        {
-            ignition_bridge_->setGroundTruthCallback(groundTruthCallback);
-        }
-
-        return;
-    };
 
     bool IgnitionPlatform::ownSendCommand()
     {
@@ -191,90 +139,12 @@ namespace ignition_platform
         twist_msg.angular.z = 0.0f;
 
         twist_pub_->publish(twist_msg);
-        // ignition_bridge_->sendTwistMsg(command_twist_msg_.twist);
     }
 
-    void IgnitionPlatform::odometryCallback(nav_msgs::msg::Odometry &odom_msg)
+    void IgnitionPlatform::poseCallback(const geometry_msgs::msg::PoseStamped &pose_msg)
     {
-        odom_msg.header.frame_id = generateTfName(namespace_, "odom");
-
-        odometry_raw_estimation_ptr_->updateData(odom_msg);
-
-        self_orientation_ = odom_msg.pose.pose.orientation;
-        odometry_info_received_ = true;
-        return;
-    };
-
-    void IgnitionPlatform::groundTruthCallback(geometry_msgs::msg::Pose &pose_msg)
-    {
-        if (!imu_info_received_)
-        {
-            RCLCPP_WARN(rclcpp::get_logger("as2_ignition_platform"), "IMU not received yet");
-            return;
-        }
-
-        geometry_msgs::msg::Pose last_pose;
-        geometry_msgs::msg::Twist twist_msg_enu;
-
-        // Derive twist from ground truth
-        static auto last_time = rclcpp::Clock().now();
-        auto current_time = rclcpp::Clock().now();
-        auto dt = (current_time - last_time).seconds();
-        last_time = current_time;
-
-        static auto last_pose_msg = pose_msg;
-        geometry_msgs::msg::Pose delta_pose;
-        delta_pose.position.x = pose_msg.position.x - last_pose_msg.position.x;
-        delta_pose.position.y = pose_msg.position.y - last_pose_msg.position.y;
-        delta_pose.position.z = pose_msg.position.z - last_pose_msg.position.z;
-        last_pose_msg = pose_msg;
-
-        static auto last_vx = delta_pose.position.x / dt;
-        static auto last_vy = delta_pose.position.y / dt;
-        static auto last_vz = delta_pose.position.z / dt;
-
-        const double alpha = 0.1f ;
-
-        twist_msg_enu.linear.x = alpha * (delta_pose.position.x / dt) + (1 - alpha) * last_vx;
-        twist_msg_enu.linear.y = alpha * (delta_pose.position.y / dt) + (1 - alpha) * last_vy;
-        twist_msg_enu.linear.z = alpha * (delta_pose.position.z / dt) + (1 - alpha) * last_vz;
-
-        last_vx = twist_msg_enu.linear.x;
-        last_vy = twist_msg_enu.linear.y;
-        last_vz = twist_msg_enu.linear.z;
-
-        // Set angular velocity in ENU frame
-        twist_msg_enu.angular = imu_msg_->angular_velocity;
-
-        geometry_msgs::msg::PoseStamped pose_stamped_msg;
-        pose_stamped_msg.header.frame_id = generateTfName(namespace_, "map");
-        pose_stamped_msg.header.stamp = rclcpp::Clock().now();
-        pose_stamped_msg.pose = pose_msg;
-        ground_truth_pose_pub_->publish(pose_stamped_msg);
-
-        geometry_msgs::msg::TwistStamped twist_stamped_msg;
-        twist_stamped_msg.header.frame_id = generateTfName(namespace_, "map");
-        twist_stamped_msg.header.stamp = rclcpp::Clock().now();
-        twist_stamped_msg.twist = twist_msg_enu;
-        ground_truth_twist_pub_->publish(twist_stamped_msg);
-
-        self_orientation_ = pose_msg.orientation;
-        odometry_info_received_ = true;
-        return;
-    };
-
-    void IgnitionPlatform::imuCallback(const sensor_msgs::msg::Imu &msg)
-    {
-      if (!imu_info_received_){
-        imu_msg_ = std::make_unique<sensor_msgs::msg::Imu>(msg);
-        imu_info_received_ = true;
-      } 
-      imu_msg_->angular_velocity = msg.angular_velocity;
-      imu_msg_->linear_acceleration = msg.linear_acceleration;
-      imu_msg_->orientation = msg.orientation;
-      imu_msg_->header.stamp = msg.header.stamp;
-      imu_msg_->header.frame_id = msg.header.frame_id;
+      self_orientation_ = pose_msg.pose.orientation;
+      odometry_info_received_ = true;
       return;
     }
-
 }
