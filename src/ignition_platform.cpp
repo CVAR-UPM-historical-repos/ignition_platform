@@ -77,7 +77,17 @@ namespace ignition_platform
             as2_names::topics::ground_truth::twist,
             as2_names::topics::ground_truth::qos);
 
+        ground_truth_pose_usv_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
+            "/usv/ground_truth/pose",
+            as2_names::topics::ground_truth::qos);
+        
+        ground_truth_twist_usv_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>(
+            "/usv/ground_truth/twist",
+            as2_names::topics::ground_truth::qos);
 
+        ground_truth_pose_targetA_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
+            "/targetA/ground_truth/pose",
+            as2_names::topics::ground_truth::qos);
 
         this->declare_parameter<std::string>("imu_topic");
         std::string imu_topic_param = this->get_parameter("imu_topic").as_string();

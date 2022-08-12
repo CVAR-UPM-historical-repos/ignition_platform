@@ -60,7 +60,6 @@ namespace ignition_platform
 
     ign_node_ptr_->Subscribe("/world/" + world_name + "/pose/info",
                              IgnitionBridge::ignitionGroundTruthCallback);
-    
 
     // Initialize publishers
     command_twist_pub_ = ign_node_ptr_->Advertise<ignition::msgs::Twist>("model" + name_space + "/cmd_vel");
@@ -127,7 +126,7 @@ namespace ignition_platform
         usvCallback_(pose);
         return;
       }
-      else if (p.name() == "target_a")
+      else if (p.name() == "small_dry_bag_e")
       {
         geometry_msgs::msg::Pose pose;
         ros_ign_bridge::convert_ign_to_ros(p, pose);
