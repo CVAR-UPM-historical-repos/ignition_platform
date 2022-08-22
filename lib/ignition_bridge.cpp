@@ -45,6 +45,9 @@ namespace ignition_platform
 
   groundTruthCallbackType IgnitionBridge::usvCallback_ = [](geometry_msgs::msg::Pose &msg) {};
   groundTruthCallbackType IgnitionBridge::targetACallback_ = [](geometry_msgs::msg::Pose &msg) {};
+  groundTruthCallbackType IgnitionBridge::targetBCallback_ = [](geometry_msgs::msg::Pose &msg) {};
+  groundTruthCallbackType IgnitionBridge::targetCCallback_ = [](geometry_msgs::msg::Pose &msg) {};
+  groundTruthCallbackType IgnitionBridge::targetDCallback_ = [](geometry_msgs::msg::Pose &msg) {};
 
 
   IgnitionBridge::IgnitionBridge(std::string name_space, std::string world_name)
@@ -106,6 +109,24 @@ namespace ignition_platform
     return;
   };
 
+  void IgnitionBridge::setTargetBCallback(groundTruthCallbackType callback)
+  {
+    targetBCallback_ = callback;
+    return;
+  };
+
+  void IgnitionBridge::setTargetCCallback(groundTruthCallbackType callback)
+  {
+    targetCCallback_ = callback;
+    return;
+  };
+
+  void IgnitionBridge::setTargetDCallback(groundTruthCallbackType callback)
+  {
+    targetDCallback_ = callback;
+    return;
+  };
+
   void IgnitionBridge::ignitionGroundTruthCallback(const ignition::msgs::Pose_V &msg)
   {
     // Remove firts element of name_space_
@@ -117,21 +138,36 @@ namespace ignition_platform
         geometry_msgs::msg::Pose pose;
         ros_ign_bridge::convert_ign_to_ros(p, pose);
         groundTruthCallback_(pose);
-        return;
       }
       else if (p.name() == "usv")
       {
         geometry_msgs::msg::Pose pose;
         ros_ign_bridge::convert_ign_to_ros(p, pose);
         usvCallback_(pose);
-        return;
       }
-      else if (p.name() == "small_dry_bag_e")
+      else if (p.name() == "box0")
       {
         geometry_msgs::msg::Pose pose;
         ros_ign_bridge::convert_ign_to_ros(p, pose);
         targetACallback_(pose);
-        return;
+      }
+      else if (p.name() == "box1")
+      {
+        geometry_msgs::msg::Pose pose;
+        ros_ign_bridge::convert_ign_to_ros(p, pose);
+        targetBCallback_(pose);
+      }
+      else if (p.name() == "box2")
+      {
+        geometry_msgs::msg::Pose pose;
+        ros_ign_bridge::convert_ign_to_ros(p, pose);
+        targetCCallback_(pose);
+      }
+      else if (p.name() == "box3")
+      {
+        geometry_msgs::msg::Pose pose;
+        ros_ign_bridge::convert_ign_to_ros(p, pose);
+        targetDCallback_(pose);
       }
     }
     return;

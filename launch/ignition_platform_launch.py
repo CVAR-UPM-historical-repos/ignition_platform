@@ -18,6 +18,8 @@ def get_world():
         
         if (words[1] == 'world' and words[3] == 'pose' and words[4] == 'info'):
             world_name = words[2]
+            if world_name[len(world_name)-1] == '/':
+                world_name = world_name[:-1]
             return world_name
     return ""
 
@@ -32,7 +34,9 @@ def get_platform_node(context, *args, **kwargs):
         output="screen",
         emulate_tty=True,
         parameters=[
-            {"control_modes_file": LaunchConfiguration('control_modes_file'),
+            {
+            "use_sim_time": True,
+            "control_modes_file": LaunchConfiguration('control_modes_file'),
             "simulation_mode": True,
             "mass": LaunchConfiguration('mass'),
             "max_thrust": LaunchConfiguration('max_thrust'),

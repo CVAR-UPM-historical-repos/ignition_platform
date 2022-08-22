@@ -110,6 +110,15 @@ namespace ignition_platform
         static void targetACallback(geometry_msgs::msg::Pose &msg);
         static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_targetA_pub_;
 
+        static void targetBCallback(geometry_msgs::msg::Pose &msg);
+        static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_targetB_pub_;
+
+        static void targetCCallback(geometry_msgs::msg::Pose &msg);
+        static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_targetC_pub_;
+
+        static void targetDCallback(geometry_msgs::msg::Pose &msg);
+        static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_targetD_pub_;
+
     private:
         static std::shared_ptr<IgnitionBridge> ignition_bridge_;
         static bool odometry_info_received_;

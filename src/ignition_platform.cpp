@@ -51,14 +51,19 @@ namespace ignition_platform
 
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr IgnitionPlatform::ground_truth_pose_usv_pub_ = nullptr;
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr IgnitionPlatform::ground_truth_twist_usv_pub_ = nullptr;
+
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr IgnitionPlatform::ground_truth_pose_targetA_pub_ = nullptr;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr IgnitionPlatform::ground_truth_pose_targetB_pub_ = nullptr;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr IgnitionPlatform::ground_truth_pose_targetC_pub_ = nullptr;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr IgnitionPlatform::ground_truth_pose_targetD_pub_ = nullptr;
 
     std::unique_ptr<sensor_msgs::msg::Imu> IgnitionPlatform::imu_msg_ = nullptr;
 
     IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform()
     {
-        this->declare_parameter<std::string>("world");
-        std::string world_param = this->get_parameter("world").as_string();
+        // this->declare_parameter<std::string>("world");
+        // std::string world_param = this->get_parameter("world").as_string();
+        std::string world_param = "coast_pu";
 
         namespace_ = this->get_namespace();
         
@@ -89,6 +94,18 @@ namespace ignition_platform
             "/targetA/ground_truth/pose",
             as2_names::topics::ground_truth::qos);
 
+        ground_truth_pose_targetB_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
+            "/targetB/ground_truth/pose",
+            as2_names::topics::ground_truth::qos);
+
+        ground_truth_pose_targetC_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
+            "/targetC/ground_truth/pose",
+            as2_names::topics::ground_truth::qos);
+
+        ground_truth_pose_targetD_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
+            "/targetD/ground_truth/pose",
+            as2_names::topics::ground_truth::qos);
+
         this->declare_parameter<std::string>("imu_topic");
         std::string imu_topic_param = this->get_parameter("imu_topic").as_string();
         imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
@@ -106,6 +123,12 @@ namespace ignition_platform
 
     void IgnitionPlatform::configureSensors()
     {
+        ignition_bridge_->setUSVCallback(usvCallback);
+        ignition_bridge_->setTargetACallback(targetACallback);
+        ignition_bridge_->setTargetBCallback(targetBCallback);
+        ignition_bridge_->setTargetCCallback(targetCCallback);
+        ignition_bridge_->setTargetDCallback(targetDCallback);
+
         this->declare_parameter<bool>("use_odom_plugin");
         bool use_odom_plugin_param = this->get_parameter("use_odom_plugin").as_bool();
 
@@ -123,9 +146,6 @@ namespace ignition_platform
         {
             ignition_bridge_->setGroundTruthCallback(groundTruthCallback);
         }
-
-        ignition_bridge_->setUSVCallback(usvCallback);
-        ignition_bridge_->setTargetACallback(targetACallback);
 
         return;
     };
@@ -275,6 +295,8 @@ namespace ignition_platform
         twist_stamped_msg.twist = twist_msg_enu;
         ground_truth_twist_pub_->publish(twist_stamped_msg);
 
+        RCLCPP_INFO_ONCE(rclcpp::get_logger("as2_ignition_platform"), "Published ground truth");
+
         self_orientation_ = pose_msg.orientation;
         odometry_info_received_ = true;
         return;
@@ -348,6 +370,39 @@ namespace ignition_platform
         pose_stamped_msg.header.stamp = rclcpp::Clock().now();
         pose_stamped_msg.pose = pose_msg;
         ground_truth_pose_targetA_pub_->publish(pose_stamped_msg);
+
+        return;
+    }
+
+    void IgnitionPlatform::targetBCallback(geometry_msgs::msg::Pose &pose_msg)
+    {
+        geometry_msgs::msg::PoseStamped pose_stamped_msg;
+        pose_stamped_msg.header.frame_id = "earth";
+        pose_stamped_msg.header.stamp = rclcpp::Clock().now();
+        pose_stamped_msg.pose = pose_msg;
+        ground_truth_pose_targetB_pub_->publish(pose_stamped_msg);
+
+        return;
+    }
+
+    void IgnitionPlatform::targetCCallback(geometry_msgs::msg::Pose &pose_msg)
+    {
+        geometry_msgs::msg::PoseStamped pose_stamped_msg;
+        pose_stamped_msg.header.frame_id = "earth";
+        pose_stamped_msg.header.stamp = rclcpp::Clock().now();
+        pose_stamped_msg.pose = pose_msg;
+        ground_truth_pose_targetC_pub_->publish(pose_stamped_msg);
+
+        return;
+    }
+
+    void IgnitionPlatform::targetDCallback(geometry_msgs::msg::Pose &pose_msg)
+    {
+        geometry_msgs::msg::PoseStamped pose_stamped_msg;
+        pose_stamped_msg.header.frame_id = "earth";
+        pose_stamped_msg.header.stamp = rclcpp::Clock().now();
+        pose_stamped_msg.pose = pose_msg;
+        ground_truth_pose_targetD_pub_->publish(pose_stamped_msg);
 
         return;
     }

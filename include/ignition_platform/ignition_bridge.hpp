@@ -78,8 +78,18 @@ namespace ignition_platform
 
         void setUSVCallback(groundTruthCallbackType callback);
         static groundTruthCallbackType usvCallback_;
+
         void setTargetACallback(groundTruthCallbackType callback);
         static groundTruthCallbackType targetACallback_;
+
+        void setTargetBCallback(groundTruthCallbackType callback);
+        static groundTruthCallbackType targetBCallback_;
+
+        void setTargetCCallback(groundTruthCallbackType callback);
+        static groundTruthCallbackType targetCCallback_;
+
+        void setTargetDCallback(groundTruthCallbackType callback);
+        static groundTruthCallbackType targetDCallback_;
 
     private:
         // Ignition callbacks
