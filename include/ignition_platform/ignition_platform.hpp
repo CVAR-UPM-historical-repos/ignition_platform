@@ -37,100 +37,104 @@
 #ifndef IGNITION_PLATFORM_HPP_
 #define IGNITION_PLATFORM_HPP_
 
-#include <memory>
-#include <string>
 #include <iostream>
 #include <memory>
 #include <rclcpp/logging.hpp>
+#include <string>
 
-#include <unordered_map>
+#include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include <Eigen/Dense>
 #include <Eigen/src/Core/Matrix.h>
-#include <math.h>
-#include <as2_core/core_functions.hpp>
 #include <as2_core/aerial_platform.hpp>
+#include <as2_core/core_functions.hpp>
 #include <as2_core/frame_utils/frame_utils.hpp>
-#include <as2_core/sensor.hpp>
 #include <as2_core/names/topics.hpp>
+#include <as2_core/sensor.hpp>
 #include <as2_core/tf_utils.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
-#include <geometry_msgs/msg/twist_stamped.hpp>
-#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <geometry_msgs/msg/transform.hpp>
-#include <nav_msgs/msg/odometry.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>
 #include <image_transport/image_transport.hpp>
-#include "sensor_msgs/msg/nav_sat_fix.hpp"
+#include <math.h>
+#include <nav_msgs/msg/odometry.hpp>
 #include <tf2/exceptions.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
+#include <unordered_map>
 
 #include "ignition_bridge.hpp"
 
-#define CMD_FREQ 10  // miliseconds
+#define CMD_FREQ 10 // miliseconds
 
 namespace ignition_platform
 {
-    using Vector3d = Eigen::Vector3d;
+using Vector3d = Eigen::Vector3d;
 
-    class IgnitionPlatform : public as2::AerialPlatform
-    {
-    public:
-        IgnitionPlatform();
-        ~IgnitionPlatform(){};
+class IgnitionPlatform : public as2::AerialPlatform
+{
+  public:
+    IgnitionPlatform();
+    ~IgnitionPlatform(){};
 
-    public:
-        void configureSensors() override;
-        bool ownSendCommand() override;
-        bool ownSetArmingState(bool state) override;
-        bool ownSetOffboardControl(bool offboard) override;
-        bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &msg) override;
+  public:
+    void configureSensors() override;
+    bool ownSendCommand() override;
+    bool ownSetArmingState(bool state) override;
+    bool ownSetOffboardControl(bool offboard) override;
+    bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &msg) override;
+    
+    // Publishers
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
 
-        rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
+    // Subscribers
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
+    void poseCallback(const geometry_msgs::msg::PoseStamped &msg);
 
-        rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
-        static std::unique_ptr<sensor_msgs::msg::Imu> imu_msg_;
-        void imuCallback(const sensor_msgs::msg::Imu &msg);
+    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
+    static std::unique_ptr<sensor_msgs::msg::Imu> imu_msg_;
+    void imuCallback(const sensor_msgs::msg::Imu &msg);
 
-        // rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
-        static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_pub_;
-        static rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr ground_truth_twist_pub_;
+    // rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+    static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_pub_;
+    static rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr ground_truth_twist_pub_;
 
-        static std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> odometry_raw_estimation_ptr_;
-        static void odometryCallback(nav_msgs::msg::Odometry &msg);
+    static std::unique_ptr<as2::sensors::Sensor<nav_msgs::msg::Odometry>> odometry_raw_estimation_ptr_;
+    static void odometryCallback(nav_msgs::msg::Odometry &msg);
 
-        static void groundTruthCallback(geometry_msgs::msg::Pose &msg);
+    static void groundTruthCallback(geometry_msgs::msg::Pose &msg);
 
-        static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_usv_pub_;
-        static rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr ground_truth_twist_usv_pub_;
-        static void usvCallback(geometry_msgs::msg::Pose &msg);
+    static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_usv_pub_;
+    static rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr ground_truth_twist_usv_pub_;
+    static void usvCallback(geometry_msgs::msg::Pose &msg);
 
-        static void targetACallback(geometry_msgs::msg::Pose &msg);
-        static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_targetA_pub_;
+    static void targetACallback(geometry_msgs::msg::Pose &msg);
+    static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_targetA_pub_;
 
-        static void targetBCallback(geometry_msgs::msg::Pose &msg);
-        static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_targetB_pub_;
+    static void targetBCallback(geometry_msgs::msg::Pose &msg);
+    static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_targetB_pub_;
 
-        static void targetCCallback(geometry_msgs::msg::Pose &msg);
-        static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_targetC_pub_;
+    static void targetCCallback(geometry_msgs::msg::Pose &msg);
+    static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_targetC_pub_;
 
-        static void targetDCallback(geometry_msgs::msg::Pose &msg);
-        static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_targetD_pub_;
+    static void targetDCallback(geometry_msgs::msg::Pose &msg);
+    static rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr ground_truth_pose_targetD_pub_;
 
-    private:
-        static std::shared_ptr<IgnitionBridge> ignition_bridge_;
-        static bool odometry_info_received_;
-        static bool imu_info_received_;
-        as2_msgs::msg::ControlMode control_in_;
-        static geometry_msgs::msg::Quaternion self_orientation_;
-        double yaw_rate_limit_ = M_PI_2;
-        static std::string namespace_;
+  private:
+    static std::shared_ptr<IgnitionBridge> ignition_bridge_;
+    static bool odometry_info_received_;
+    static bool imu_info_received_;
+    as2_msgs::msg::ControlMode control_in_;
+    static geometry_msgs::msg::Quaternion self_orientation_;
+    double yaw_rate_limit_ = M_PI_2;
+    static std::string namespace_;
 
-    private:
-        void resetCommandTwistMsg();
-    };
-}
+  private:
+    void resetCommandTwistMsg();
+};
+} // namespace ignition_platform
 
 #endif // IGNITION_PLATFORM_HPP_

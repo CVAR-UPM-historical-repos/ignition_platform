@@ -39,138 +39,136 @@
 namespace ignition_platform
 {
 
-  std::string IgnitionBridge::name_space_ = "";
-  odometryCallbackType IgnitionBridge::odometryCallback_ = [](nav_msgs::msg::Odometry &msg) {};
-  groundTruthCallbackType IgnitionBridge::groundTruthCallback_ = [](geometry_msgs::msg::Pose &msg) {};
+std::string IgnitionBridge::name_space_ = "";
+odometryCallbackType IgnitionBridge::odometryCallback_ = [](nav_msgs::msg::Odometry &msg) {};
+groundTruthCallbackType IgnitionBridge::groundTruthCallback_ = [](geometry_msgs::msg::Pose &msg) {};
 
-  groundTruthCallbackType IgnitionBridge::usvCallback_ = [](geometry_msgs::msg::Pose &msg) {};
-  groundTruthCallbackType IgnitionBridge::targetACallback_ = [](geometry_msgs::msg::Pose &msg) {};
-  groundTruthCallbackType IgnitionBridge::targetBCallback_ = [](geometry_msgs::msg::Pose &msg) {};
-  groundTruthCallbackType IgnitionBridge::targetCCallback_ = [](geometry_msgs::msg::Pose &msg) {};
-  groundTruthCallbackType IgnitionBridge::targetDCallback_ = [](geometry_msgs::msg::Pose &msg) {};
+groundTruthCallbackType IgnitionBridge::usvCallback_ = [](geometry_msgs::msg::Pose &msg) {};
+groundTruthCallbackType IgnitionBridge::targetACallback_ = [](geometry_msgs::msg::Pose &msg) {};
+groundTruthCallbackType IgnitionBridge::targetBCallback_ = [](geometry_msgs::msg::Pose &msg) {};
+groundTruthCallbackType IgnitionBridge::targetCCallback_ = [](geometry_msgs::msg::Pose &msg) {};
+groundTruthCallbackType IgnitionBridge::targetDCallback_ = [](geometry_msgs::msg::Pose &msg) {};
 
-
-  IgnitionBridge::IgnitionBridge(std::string name_space, std::string world_name)
-  {
+IgnitionBridge::IgnitionBridge(std::string name_space, std::string world_name)
+{
     name_space_ = name_space;
 
     // Initialize the ignition node
     ign_node_ptr_ = std::make_shared<ignition::transport::Node>();
 
     // Initialize subscribers
-    ign_node_ptr_->Subscribe("/model" + name_space + "/odometry",
-                             IgnitionBridge::ignitionOdometryCallback);
+    ign_node_ptr_->Subscribe("/model" + name_space + "/odometry", IgnitionBridge::ignitionOdometryCallback);
 
-    ign_node_ptr_->Subscribe("/world/" + world_name + "/pose/info",
-                             IgnitionBridge::ignitionGroundTruthCallback);
+    ign_node_ptr_->Subscribe("/world/" + world_name + "/pose/info", IgnitionBridge::ignitionGroundTruthCallback);
 
     // Initialize publishers
     command_twist_pub_ = ign_node_ptr_->Advertise<ignition::msgs::Twist>("model" + name_space + "/cmd_vel");
 
     return;
-  };
+};
 
-  void IgnitionBridge::sendTwistMsg(const geometry_msgs::msg::Twist &ros_twist_msg) {
+void IgnitionBridge::sendTwistMsg(const geometry_msgs::msg::Twist &ros_twist_msg)
+{
     ignition::msgs::Twist ign_twist_msg;
     ros_ign_bridge::convert_ros_to_ign(ros_twist_msg, ign_twist_msg);
     command_twist_pub_.Publish(ign_twist_msg);
     return;
-  };
+};
 
-  void IgnitionBridge::setOdometryCallback(odometryCallbackType callback)
-  {
+void IgnitionBridge::setOdometryCallback(odometryCallbackType callback)
+{
     odometryCallback_ = callback;
     return;
-  };
+};
 
-  void IgnitionBridge::ignitionOdometryCallback(const ignition::msgs::Odometry &msg)
-  {
+void IgnitionBridge::ignitionOdometryCallback(const ignition::msgs::Odometry &msg)
+{
     nav_msgs::msg::Odometry odom_msg;
     ros_ign_bridge::convert_ign_to_ros(msg, odom_msg);
     odometryCallback_(odom_msg);
     return;
-  };
+};
 
-  void IgnitionBridge::setGroundTruthCallback(groundTruthCallbackType callback)
-  {
+void IgnitionBridge::setGroundTruthCallback(groundTruthCallbackType callback)
+{
     groundTruthCallback_ = callback;
     return;
-  };
+};
 
-  void IgnitionBridge::setUSVCallback(groundTruthCallbackType callback)
-  {
+void IgnitionBridge::setUSVCallback(groundTruthCallbackType callback)
+{
     usvCallback_ = callback;
     return;
-  };
+};
 
-  void IgnitionBridge::setTargetACallback(groundTruthCallbackType callback)
-  {
+void IgnitionBridge::setTargetACallback(groundTruthCallbackType callback)
+{
     targetACallback_ = callback;
     return;
-  };
+};
 
-  void IgnitionBridge::setTargetBCallback(groundTruthCallbackType callback)
-  {
+void IgnitionBridge::setTargetBCallback(groundTruthCallbackType callback)
+{
     targetBCallback_ = callback;
     return;
-  };
+};
 
-  void IgnitionBridge::setTargetCCallback(groundTruthCallbackType callback)
-  {
+void IgnitionBridge::setTargetCCallback(groundTruthCallbackType callback)
+{
     targetCCallback_ = callback;
     return;
-  };
+};
 
-  void IgnitionBridge::setTargetDCallback(groundTruthCallbackType callback)
-  {
+void IgnitionBridge::setTargetDCallback(groundTruthCallbackType callback)
+{
     targetDCallback_ = callback;
     return;
-  };
+};
 
-  void IgnitionBridge::ignitionGroundTruthCallback(const ignition::msgs::Pose_V &msg)
-  {
+void IgnitionBridge::ignitionGroundTruthCallback(const ignition::msgs::Pose_V &msg)
+{
     // Remove firts element of name_space_
     std::string name_space_2 = name_space_.substr(1);
     for (auto const &p : msg.pose())
     {
-      if (p.name() == name_space_2)
-      {
-        geometry_msgs::msg::Pose pose;
-        ros_ign_bridge::convert_ign_to_ros(p, pose);
-        groundTruthCallback_(pose);
-      }
-      else if (p.name() == "usv")
-      {
-        geometry_msgs::msg::Pose pose;
-        ros_ign_bridge::convert_ign_to_ros(p, pose);
-        usvCallback_(pose);
-      }
-      else if (p.name() == "box0")
-      {
-        geometry_msgs::msg::Pose pose;
-        ros_ign_bridge::convert_ign_to_ros(p, pose);
-        targetACallback_(pose);
-      }
-      else if (p.name() == "box1")
-      {
-        geometry_msgs::msg::Pose pose;
-        ros_ign_bridge::convert_ign_to_ros(p, pose);
-        targetBCallback_(pose);
-      }
-      else if (p.name() == "box2")
-      {
-        geometry_msgs::msg::Pose pose;
-        ros_ign_bridge::convert_ign_to_ros(p, pose);
-        targetCCallback_(pose);
-      }
-      else if (p.name() == "box3")
-      {
-        geometry_msgs::msg::Pose pose;
-        ros_ign_bridge::convert_ign_to_ros(p, pose);
-        targetDCallback_(pose);
-      }
+        if (p.name() == name_space_2)
+        {
+            geometry_msgs::msg::Pose pose;
+            ros_ign_bridge::convert_ign_to_ros(p, pose);
+            groundTruthCallback_(pose);
+        }
+        else if (p.name() == "usv")
+        {
+            geometry_msgs::msg::Pose pose;
+            ros_ign_bridge::convert_ign_to_ros(p, pose);
+            usvCallback_(pose);
+        }
+        else if (p.name() == "Vessel E")
+        {
+            geometry_msgs::msg::Pose pose;
+            ros_ign_bridge::convert_ign_to_ros(p, pose);
+            targetACallback_(pose);
+        }
+        else if (p.name() == "small_blue_box")
+        {
+            geometry_msgs::msg::Pose pose;
+            ros_ign_bridge::convert_ign_to_ros(p, pose);
+            targetBCallback_(pose);
+        }
+        else if (p.name() == "small_dry_bag")
+        {
+            geometry_msgs::msg::Pose pose;
+            ros_ign_bridge::convert_ign_to_ros(p, pose);
+            targetCCallback_(pose);
+        }
+        else if (p.name() == "large_crate_handles")
+        {
+            geometry_msgs::msg::Pose pose;
+            ros_ign_bridge::convert_ign_to_ros(p, pose);
+            targetDCallback_(pose);
+        }
     }
     return;
-  };
+};
 
 } // namespace ignition_platform

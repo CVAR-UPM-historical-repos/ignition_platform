@@ -37,72 +37,71 @@
 #ifndef IGNITION_BRIDGE_HPP_
 #define IGNITION_BRIDGE_HPP_
 
+#include <iostream>
 #include <memory>
 #include <string>
-#include <iostream>
 
-#include <unordered_map>
-#include <as2_core/sensor.hpp>
-#include <as2_core/names/topics.hpp>
+#include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include <as2_core/frame_utils/frame_utils.hpp>
+#include <as2_core/names/topics.hpp>
+#include <as2_core/sensor.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
-#include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include <tf2_msgs/msg/tf_message.h>
+#include <unordered_map>
 
-#include <ignition/transport.hh>
 #include <ignition/msgs.hh>
+#include <ignition/transport.hh>
 #include <ros_ign_bridge/convert.hpp>
 
 namespace ignition_platform
 {
-    typedef void (*odometryCallbackType)(nav_msgs::msg::Odometry &msg);
-    typedef void (*groundTruthCallbackType)(geometry_msgs::msg::Pose &msg);
-    
-    class IgnitionBridge
-    {
-    public:
-        IgnitionBridge(std::string name_space = "/", std::string world_name = "");
-        ~IgnitionBridge(){};
+typedef void (*odometryCallbackType)(nav_msgs::msg::Odometry &msg);
+typedef void (*groundTruthCallbackType)(geometry_msgs::msg::Pose &msg);
 
-    public:
-        std::shared_ptr<ignition::transport::Node> ign_node_ptr_;
+class IgnitionBridge
+{
+  public:
+    IgnitionBridge(std::string name_space = "/", std::string world_name = "");
+    ~IgnitionBridge(){};
 
-    private:
-        static std::string name_space_;
+  public:
+    std::shared_ptr<ignition::transport::Node> ign_node_ptr_;
 
-    public:
-        void setOdometryCallback(odometryCallbackType callback);
-        void setGroundTruthCallback(groundTruthCallbackType callback);
+  private:
+    static std::string name_space_;
 
-        void setUSVCallback(groundTruthCallbackType callback);
-        static groundTruthCallbackType usvCallback_;
+  public:
+    void setOdometryCallback(odometryCallbackType callback);
+    void setGroundTruthCallback(groundTruthCallbackType callback);
 
-        void setTargetACallback(groundTruthCallbackType callback);
-        static groundTruthCallbackType targetACallback_;
+    void setUSVCallback(groundTruthCallbackType callback);
+    static groundTruthCallbackType usvCallback_;
 
-        void setTargetBCallback(groundTruthCallbackType callback);
-        static groundTruthCallbackType targetBCallback_;
+    void setTargetACallback(groundTruthCallbackType callback);
+    static groundTruthCallbackType targetACallback_;
 
-        void setTargetCCallback(groundTruthCallbackType callback);
-        static groundTruthCallbackType targetCCallback_;
+    void setTargetBCallback(groundTruthCallbackType callback);
+    static groundTruthCallbackType targetBCallback_;
 
-        void setTargetDCallback(groundTruthCallbackType callback);
-        static groundTruthCallbackType targetDCallback_;
+    void setTargetCCallback(groundTruthCallbackType callback);
+    static groundTruthCallbackType targetCCallback_;
 
-    private:
-        // Ignition callbacks
-        static odometryCallbackType odometryCallback_;
-        static void ignitionOdometryCallback(const ignition::msgs::Odometry &msg);
-        static groundTruthCallbackType groundTruthCallback_;
-        static void ignitionGroundTruthCallback(const ignition::msgs::Pose_V &msg);
+    void setTargetDCallback(groundTruthCallbackType callback);
+    static groundTruthCallbackType targetDCallback_;
 
-    public:
-        ignition::transport::v11::Node::Publisher command_twist_pub_;
-        void sendTwistMsg(const geometry_msgs::msg::Twist &msg);
+  private:
+    // Ignition callbacks
+    static odometryCallbackType odometryCallback_;
+    static void ignitionOdometryCallback(const ignition::msgs::Odometry &msg);
+    static groundTruthCallbackType groundTruthCallback_;
+    static void ignitionGroundTruthCallback(const ignition::msgs::Pose_V &msg);
 
-    };
-}
+  public:
+    ignition::transport::v11::Node::Publisher command_twist_pub_;
+    void sendTwistMsg(const geometry_msgs::msg::Twist &msg);
+};
+} // namespace ignition_platform
 
 #endif // IGNITION_BRIDGE_HPP_
