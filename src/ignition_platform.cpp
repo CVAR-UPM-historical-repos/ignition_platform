@@ -138,7 +138,7 @@ namespace ignition_platform
         twist_msg.angular.y = 0.0f;
         twist_msg.angular.z = 0.0f;
 
-        twist_pub_->publish(twist_msg);
+        // twist_pub_->publish(twist_msg);
     }
 
     void IgnitionPlatform::poseCallback(const geometry_msgs::msg::PoseStamped &pose_msg)
