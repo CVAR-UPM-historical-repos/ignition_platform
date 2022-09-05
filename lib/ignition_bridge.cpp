@@ -127,6 +127,7 @@ void IgnitionBridge::setTargetDCallback(groundTruthCallbackType callback)
 
 void IgnitionBridge::ignitionGroundTruthCallback(const ignition::msgs::Pose_V &msg)
 {
+
     // Remove firts element of name_space_
     std::string name_space_2 = name_space_.substr(1);
     for (auto const &p : msg.pose())

@@ -80,13 +80,15 @@ class IgnitionPlatform : public as2::AerialPlatform
     IgnitionPlatform();
     ~IgnitionPlatform(){};
 
+    static rclcpp::Clock::SharedPtr clock_;
+
   public:
     void configureSensors() override;
     bool ownSendCommand() override;
     bool ownSetArmingState(bool state) override;
     bool ownSetOffboardControl(bool offboard) override;
     bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &msg) override;
-    
+
     // Publishers
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
 
