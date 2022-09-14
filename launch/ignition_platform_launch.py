@@ -35,7 +35,6 @@ def get_platform_node(context, *args, **kwargs):
         emulate_tty=True,
         parameters=[
             {
-                "use_sim_time": True,
                 "control_modes_file": LaunchConfiguration('control_modes_file'),
                 "simulation_mode": True,
                 "mass": LaunchConfiguration('mass'),
@@ -45,6 +44,7 @@ def get_platform_node(context, *args, **kwargs):
                 "use_odom_plugin": LaunchConfiguration('use_odom_plugin'),
                 "use_ground_truth": LaunchConfiguration('use_ground_truth'),
                 "world": LaunchConfiguration('world'),
+                'use_sim_time': LaunchConfiguration('use_sim_time')
             }]
     )
     return [node]
@@ -66,6 +66,7 @@ def generate_launch_description():
         DeclareLaunchArgument('use_odom_plugin', default_value='false'),
         DeclareLaunchArgument('use_ground_truth', default_value='true'),
         DeclareLaunchArgument('world', default_value='empty'),
+        DeclareLaunchArgument('use_sim_time', default_value='false'),
 
         OpaqueFunction(function=get_platform_node)
     ])
