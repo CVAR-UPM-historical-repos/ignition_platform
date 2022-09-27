@@ -37,56 +37,52 @@
 #ifndef IGNITION_PLATFORM_HPP_
 #define IGNITION_PLATFORM_HPP_
 
-#include <memory>
-#include <string>
 #include <iostream>
 #include <memory>
 #include <rclcpp/logging.hpp>
+#include <string>
 
 #include <math.h>
-#include <as2_core/core_functions.hpp>
 #include <as2_core/aerial_platform.hpp>
+#include <as2_core/core_functions.hpp>
 #include <as2_core/frame_utils/frame_utils.hpp>
 #include <as2_core/names/topics.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 
-
 #define CMD_FREQ 10  // miliseconds
 
-namespace ignition_platform
-{
-    using Vector3d = Eigen::Vector3d;
+namespace ignition_platform {
+using Vector3d = Eigen::Vector3d;
 
-    class IgnitionPlatform : public as2::AerialPlatform
-    {
-    public:
-        IgnitionPlatform();
-        ~IgnitionPlatform(){};
+class IgnitionPlatform : public as2::AerialPlatform {
+public:
+  IgnitionPlatform();
+  ~IgnitionPlatform(){};
 
-    public:
-        void configureSensors(){};
-        bool ownSendCommand() override;
-        bool ownSetArmingState(bool state) override;
-        bool ownSetOffboardControl(bool offboard) override;
-        bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &msg) override;
+public:
+  void configureSensors(){};
+  bool ownSendCommand() override;
+  bool ownSetArmingState(bool state) override;
+  bool ownSetOffboardControl(bool offboard) override;
+  bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &msg) override;
 
-        // Publishers
-        rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
+  // Publishers
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
 
-        // Subscribers
-        rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
-        void poseCallback(const geometry_msgs::msg::PoseStamped &msg);
+  // Subscribers
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
+  void poseCallback(const geometry_msgs::msg::PoseStamped &msg);
 
-    private:
-        as2_msgs::msg::ControlMode control_in_;
-        bool odometry_info_received_ = false;
-        geometry_msgs::msg::Quaternion self_orientation_;
-        double yaw_rate_limit_ = M_PI_2;
+private:
+  as2_msgs::msg::ControlMode control_in_;
+  bool odometry_info_received_ = false;
+  geometry_msgs::msg::Quaternion self_orientation_;
+  double yaw_rate_limit_ = M_PI_2;
 
-    private:
-        void resetCommandTwistMsg();
-    };
-}
+private:
+  void resetCommandTwistMsg();
+};
+}  // namespace ignition_platform
 
-#endif // IGNITION_PLATFORM_HPP_
+#endif  // IGNITION_PLATFORM_HPP_
