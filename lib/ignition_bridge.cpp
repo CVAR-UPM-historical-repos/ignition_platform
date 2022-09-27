@@ -36,76 +36,68 @@
 
 #include "ignition_bridge.hpp"
 
-namespace ignition_platform
-{
+namespace ignition_platform {
 
-  std::string IgnitionBridge::name_space_ = "";
-  odometryCallbackType IgnitionBridge::odometryCallback_ = [](nav_msgs::msg::Odometry &msg) {};
-  groundTruthCallbackType IgnitionBridge::groundTruthCallback_ = [](geometry_msgs::msg::Pose &msg) {};
+std::string IgnitionBridge::name_space_                      = "";
+odometryCallbackType IgnitionBridge::odometryCallback_       = [](nav_msgs::msg::Odometry &msg) {};
+groundTruthCallbackType IgnitionBridge::groundTruthCallback_ = [](geometry_msgs::msg::Pose &msg) {};
 
-  IgnitionBridge::IgnitionBridge(std::string name_space, std::string world_name)
-  {
-    name_space_ = name_space;
+IgnitionBridge::IgnitionBridge(std::string name_space, std::string world_name) {
+  name_space_ = name_space;
 
-    // Initialize the ignition node
-    ign_node_ptr_ = std::make_shared<ignition::transport::Node>();
+  // Initialize the ignition node
+  ign_node_ptr_ = std::make_shared<ignition::transport::Node>();
 
-    // Initialize subscribers
-    ign_node_ptr_->Subscribe("/model" + name_space + "/odometry",
-                             IgnitionBridge::ignitionOdometryCallback);
+  // Initialize subscribers
+  ign_node_ptr_->Subscribe("/model" + name_space + "/odometry",
+                           IgnitionBridge::ignitionOdometryCallback);
 
-    ign_node_ptr_->Subscribe("/world/" + world_name + "/pose/info",
-                             IgnitionBridge::ignitionGroundTruthCallback);
-    
+  ign_node_ptr_->Subscribe("/world/" + world_name + "/pose/info",
+                           IgnitionBridge::ignitionGroundTruthCallback);
 
-    // Initialize publishers
-    command_twist_pub_ = ign_node_ptr_->Advertise<ignition::msgs::Twist>("model" + name_space + "/cmd_vel");
+  // Initialize publishers
+  command_twist_pub_ =
+      ign_node_ptr_->Advertise<ignition::msgs::Twist>("model" + name_space + "/cmd_vel");
 
-    return;
-  };
+  return;
+};
 
-  void IgnitionBridge::sendTwistMsg(const geometry_msgs::msg::Twist &ros_twist_msg) {
-    ignition::msgs::Twist ign_twist_msg;
-    ros_ign_bridge::convert_ros_to_ign(ros_twist_msg, ign_twist_msg);
-    command_twist_pub_.Publish(ign_twist_msg);
-    return;
-  };
+void IgnitionBridge::sendTwistMsg(const geometry_msgs::msg::Twist &ros_twist_msg) {
+  ignition::msgs::Twist ign_twist_msg;
+  ros_ign_bridge::convert_ros_to_ign(ros_twist_msg, ign_twist_msg);
+  command_twist_pub_.Publish(ign_twist_msg);
+  return;
+};
 
-  void IgnitionBridge::setOdometryCallback(odometryCallbackType callback)
-  {
-    odometryCallback_ = callback;
-    return;
-  };
+void IgnitionBridge::setOdometryCallback(odometryCallbackType callback) {
+  odometryCallback_ = callback;
+  return;
+};
 
-  void IgnitionBridge::ignitionOdometryCallback(const ignition::msgs::Odometry &msg)
-  {
-    nav_msgs::msg::Odometry odom_msg;
-    ros_ign_bridge::convert_ign_to_ros(msg, odom_msg);
-    odometryCallback_(odom_msg);
-    return;
-  };
+void IgnitionBridge::ignitionOdometryCallback(const ignition::msgs::Odometry &msg) {
+  nav_msgs::msg::Odometry odom_msg;
+  ros_ign_bridge::convert_ign_to_ros(msg, odom_msg);
+  odometryCallback_(odom_msg);
+  return;
+};
 
-  void IgnitionBridge::setGroundTruthCallback(groundTruthCallbackType callback)
-  {
-    groundTruthCallback_ = callback;
-    return;
-  };
+void IgnitionBridge::setGroundTruthCallback(groundTruthCallbackType callback) {
+  groundTruthCallback_ = callback;
+  return;
+};
 
-  void IgnitionBridge::ignitionGroundTruthCallback(const ignition::msgs::Pose_V &msg)
-  {
-    // Remove firts element of name_space_
-    std::string name_space_2 = name_space_.substr(1);
-    for (auto const &p : msg.pose())
-    {
-      if (p.name() == name_space_2)
-      {
-        geometry_msgs::msg::Pose pose;
-        ros_ign_bridge::convert_ign_to_ros(p, pose);
-        groundTruthCallback_(pose);
-        return;
-      }
+void IgnitionBridge::ignitionGroundTruthCallback(const ignition::msgs::Pose_V &msg) {
+  // Remove firts element of name_space_
+  std::string name_space_2 = name_space_.substr(1);
+  for (auto const &p : msg.pose()) {
+    if (p.name() == name_space_2) {
+      geometry_msgs::msg::Pose pose;
+      ros_ign_bridge::convert_ign_to_ros(p, pose);
+      groundTruthCallback_(pose);
+      return;
     }
-    return;
-  };
+  }
+  return;
+};
 
-} // namespace ignition_platform
+}  // namespace ignition_platform
