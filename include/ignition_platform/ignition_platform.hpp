@@ -45,10 +45,11 @@
 #include <math.h>
 #include <as2_core/aerial_platform.hpp>
 #include <as2_core/core_functions.hpp>
-#include <as2_core/frame_utils/frame_utils.hpp>
+#include <as2_core/utils/frame_utils.hpp>
 #include <as2_core/names/topics.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
+#include <std_msgs/msg/bool.hpp>
 
 #define CMD_FREQ 10  // miliseconds
 
@@ -69,6 +70,7 @@ public:
 
   // Publishers
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr arm_pub_;
 
   // Subscribers
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;

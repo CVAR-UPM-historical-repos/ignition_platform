@@ -17,7 +17,8 @@ def get_platform_node(context, *args, **kwargs):
             "use_sim_time": LaunchConfiguration('use_sim_time'),
             "control_modes_file": LaunchConfiguration('control_modes_file'),
             "simulation_mode": True,
-            "cmd_vel_topic": LaunchConfiguration('cmd_vel_topic')
+            "cmd_vel_topic": LaunchConfiguration('cmd_vel_topic'),
+            "arm_topic": LaunchConfiguration('arm_topic')
         }]
     )
     return [node]
@@ -33,7 +34,8 @@ def generate_launch_description():
             'AEROSTACK2_SIMULATION_DRONE_ID')),
         DeclareLaunchArgument('use_sim_time', default_value='false'),
         DeclareLaunchArgument('control_modes_file', default_value=config),
-        DeclareLaunchArgument('cmd_vel_topic', default_value='/cmd_vel'),
+        DeclareLaunchArgument('cmd_vel_topic', default_value='cmd_vel'),
+        DeclareLaunchArgument('arm_topic', default_value='arm'),
 
         OpaqueFunction(function=get_platform_node)
     ])
