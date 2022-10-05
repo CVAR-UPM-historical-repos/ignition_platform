@@ -1,12 +1,16 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, IncludeLaunchDescription
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, EnvironmentVariable
 from launch_ros.substitutions import FindPackageShare
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 
 def get_platform_node(context, *args, **kwargs):
+    drone_id = LaunchConfiguration('drone_id').perform(context)
 
+    cmd_vel_topic = DeclareLaunchArgument('cmd_vel_topic', default_value=f'/ign/{drone_id}/cmd_vel')
+    arm_topic = DeclareLaunchArgument('arm_topic', default_value=f'/ign/{drone_id}/arm')
     node = Node(
         package="ignition_platform",
         executable="ignition_platform_node",
@@ -21,7 +25,7 @@ def get_platform_node(context, *args, **kwargs):
             "arm_topic": LaunchConfiguration('arm_topic')
         }]
     )
-    return [node]
+    return [cmd_vel_topic, arm_topic, node]
 
 
 def generate_launch_description():
@@ -29,13 +33,25 @@ def generate_launch_description():
         FindPackageShare('ignition_platform'),
         'config', 'control_modes.yaml'
     ])
+
+    bridges = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([PathJoinSubstitution([
+            FindPackageShare('ignition_assets'),
+            'launch', 'model_bridges.py'
+        ])]),
+        launch_arguments={
+            'drone_id': LaunchConfiguration('drone_id'),
+            'config_file': LaunchConfiguration('config_file')
+        }.items(),
+    )
+
     return LaunchDescription([
         DeclareLaunchArgument('drone_id', default_value=EnvironmentVariable(
             'AEROSTACK2_SIMULATION_DRONE_ID')),
         DeclareLaunchArgument('use_sim_time', default_value='false'),
         DeclareLaunchArgument('control_modes_file', default_value=config),
-        DeclareLaunchArgument('cmd_vel_topic', default_value='cmd_vel'),
-        DeclareLaunchArgument('arm_topic', default_value='arm'),
-
+        DeclareLaunchArgument('config_file', description='JSON configuration file to create bridges'),
+        
+        bridges,
         OpaqueFunction(function=get_platform_node)
     ])

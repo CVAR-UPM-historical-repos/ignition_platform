@@ -44,11 +44,10 @@ IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform() {
   this->declare_parameter<std::string>("arm_topic");
   std::string arm_topic_param = this->get_parameter("arm_topic").as_string();
 
-  twist_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(
-      this->generate_global_name(cmd_vel_topic_param), rclcpp::QoS(1));
+  twist_pub_ =
+      this->create_publisher<geometry_msgs::msg::Twist>(cmd_vel_topic_param, rclcpp::QoS(1));
 
-  arm_pub_ = this->create_publisher<std_msgs::msg::Bool>(
-      this->generate_global_name(arm_topic_param), rclcpp::QoS(1));
+  arm_pub_ = this->create_publisher<std_msgs::msg::Bool>(arm_topic_param, rclcpp::QoS(1));
 
   pose_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
       as2_names::topics::self_localization::pose, as2_names::topics::self_localization::qos,
@@ -79,7 +78,7 @@ bool IgnitionPlatform::ownSendCommand() {
     command_twist_msg_.twist.linear.z = twist_lineal_flu(2);
 
     twist_pub_->publish(command_twist_msg_.twist);
-    
+
   } else if (control_in_.reference_frame == as2_msgs::msg::ControlMode::BODY_FLU_FRAME) {
     twist_pub_->publish(command_twist_msg_.twist);
   }
@@ -94,9 +93,7 @@ bool IgnitionPlatform::ownSetArmingState(bool state) {
   return true;
 };
 
-bool IgnitionPlatform::ownSetOffboardControl(bool offboard) {
-  return true;
-};
+bool IgnitionPlatform::ownSetOffboardControl(bool offboard) { return true; };
 
 bool IgnitionPlatform::ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &control_in) {
   control_in_ = control_in;
