@@ -9,8 +9,10 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 def get_platform_node(context, *args, **kwargs):
     drone_id = LaunchConfiguration('drone_id').perform(context)
 
-    cmd_vel_topic = DeclareLaunchArgument('cmd_vel_topic', default_value=f'/ign/{drone_id}/cmd_vel')
-    arm_topic = DeclareLaunchArgument('arm_topic', default_value=f'/ign/{drone_id}/arm')
+    cmd_vel_topic = DeclareLaunchArgument(
+        'cmd_vel_topic', default_value=f'/ign/{drone_id}/cmd_vel')
+    arm_topic = DeclareLaunchArgument(
+        'arm_topic', default_value=f'/ign/{drone_id}/arm')
     node = Node(
         package="ignition_platform",
         executable="ignition_platform_node",
@@ -50,8 +52,9 @@ def generate_launch_description():
             'AEROSTACK2_SIMULATION_DRONE_ID')),
         DeclareLaunchArgument('use_sim_time', default_value='false'),
         DeclareLaunchArgument('control_modes_file', default_value=config),
-        DeclareLaunchArgument('config_file', description='JSON configuration file to create bridges'),
-        
+        DeclareLaunchArgument(
+            'config_file', description='JSON configuration file to create bridges'),
+
         bridges,
         OpaqueFunction(function=get_platform_node)
     ])

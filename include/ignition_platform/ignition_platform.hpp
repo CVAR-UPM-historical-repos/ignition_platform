@@ -45,13 +45,11 @@
 #include <math.h>
 #include <as2_core/aerial_platform.hpp>
 #include <as2_core/core_functions.hpp>
-#include <as2_core/utils/frame_utils.hpp>
 #include <as2_core/names/topics.hpp>
+#include <as2_core/utils/frame_utils.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <std_msgs/msg/bool.hpp>
-
-#define CMD_FREQ 10  // miliseconds
 
 namespace ignition_platform {
 using Vector3d = Eigen::Vector3d;
