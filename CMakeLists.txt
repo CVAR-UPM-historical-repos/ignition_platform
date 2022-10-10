@@ -18,6 +18,7 @@ set(PROJECT_DEPENDENCIES
   rclcpp
   geometry_msgs
   as2_core
+  ignition_assets
 )
 
 foreach(DEPENDENCY ${PROJECT_DEPENDENCIES})
