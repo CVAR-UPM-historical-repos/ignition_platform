@@ -55,33 +55,12 @@ IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform() {
 };
 
 bool IgnitionPlatform::ownSendCommand() {
-  if (control_in_.reference_frame == as2_msgs::msg::ControlMode::LOCAL_ENU_FRAME) {
-    if (!odometry_info_received_) {
-      return false;
-    }
-    odometry_info_received_ = false;
-
-    if (command_twist_msg_.twist.angular.z > yaw_rate_limit_) {
-      command_twist_msg_.twist.angular.z = yaw_rate_limit_;
-    } else if (command_twist_msg_.twist.angular.z < -yaw_rate_limit_) {
-      command_twist_msg_.twist.angular.z = -yaw_rate_limit_;
-    }
-
-    Eigen::Vector3d twist_lineal_enu =
-        Eigen::Vector3d(command_twist_msg_.twist.linear.x, command_twist_msg_.twist.linear.y,
-                        command_twist_msg_.twist.linear.z);
-
-    Eigen::Vector3d twist_lineal_flu =
-        as2::frame::convertENUtoFLU(self_orientation_, twist_lineal_enu);
-    command_twist_msg_.twist.linear.x = twist_lineal_flu(0);
-    command_twist_msg_.twist.linear.y = twist_lineal_flu(1);
-    command_twist_msg_.twist.linear.z = twist_lineal_flu(2);
-
-    twist_pub_->publish(command_twist_msg_.twist);
-
-  } else if (control_in_.reference_frame == as2_msgs::msg::ControlMode::BODY_FLU_FRAME) {
-    twist_pub_->publish(command_twist_msg_.twist);
+  if (command_twist_msg_.twist.angular.z > yaw_rate_limit_) {
+    command_twist_msg_.twist.angular.z = yaw_rate_limit_;
+  } else if (command_twist_msg_.twist.angular.z < -yaw_rate_limit_) {
+    command_twist_msg_.twist.angular.z = -yaw_rate_limit_;
   }
+  twist_pub_->publish(command_twist_msg_.twist);
   return true;
 };
 
