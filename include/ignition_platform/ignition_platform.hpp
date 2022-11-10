@@ -73,6 +73,8 @@ public:
   // Subscribers
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
   void poseCallback(const geometry_msgs::msg::PoseStamped &msg);
+  
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr stop_sub_;
 
 private:
   as2_msgs::msg::ControlMode control_in_;

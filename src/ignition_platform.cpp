@@ -52,6 +52,10 @@ IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform() {
   pose_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
       as2_names::topics::self_localization::pose, as2_names::topics::self_localization::qos,
       std::bind(&IgnitionPlatform::poseCallback, this, std::placeholders::_1));
+
+  stop_sub_ = this->create_subscription<std_msgs::msg::Bool>(
+      this->generate_global_name("platform/stop"), rclcpp::SystemDefaultsQoS(),
+      [this](const std_msgs::msg::Bool::ConstSharedPtr msg) { ownSetArmingState(false); });
 };
 
 bool IgnitionPlatform::ownSendCommand() {
