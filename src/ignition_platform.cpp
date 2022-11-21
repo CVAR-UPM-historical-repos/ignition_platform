@@ -107,6 +107,8 @@ bool IgnitionPlatform::ownSetArmingState(bool state) {
 bool IgnitionPlatform::ownSetOffboardControl(bool offboard) { return true; }
 
 bool IgnitionPlatform::ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &control_in) {
+  RCLCPP_INFO(this->get_logger(), "Control mode: [%s]",
+              as2::control_mode::controlModeToString(control_in).c_str());
   control_in_ = control_in;
   return true;
 }

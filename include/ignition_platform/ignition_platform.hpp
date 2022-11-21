@@ -44,6 +44,7 @@
 #include "as2_core/aerial_platform.hpp"
 #include "as2_core/core_functions.hpp"
 #include "as2_core/names/topics.hpp"
+#include "as2_core/utils/control_mode_utils.hpp"
 #include "as2_core/utils/tf_utils.hpp"
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -78,10 +79,10 @@ private:
   as2_msgs::msg::ControlMode control_in_;
   double yaw_rate_limit_ = M_PI_2;
 
-  bool enable_takeoff_ = false;
-  bool enable_land_ = false;
-  bool state_received_ = false;
-  double current_height_ = 0.0;
+  bool enable_takeoff_           = false;
+  bool enable_land_              = false;
+  bool state_received_           = false;
+  double current_height_         = 0.0;
   double current_vertical_speed_ = 0.0;
   std::shared_ptr<as2::tf::TfHandler> tf_handler_;
 
