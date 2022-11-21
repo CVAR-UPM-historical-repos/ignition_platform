@@ -37,22 +37,19 @@
 #ifndef IGNITION_PLATFORM_HPP_
 #define IGNITION_PLATFORM_HPP_
 
-#include <iostream>
-#include <memory>
 #include <rclcpp/logging.hpp>
-#include <string>
-
-#include <math.h>
-#include <as2_core/aerial_platform.hpp>
-#include <as2_core/core_functions.hpp>
-#include <as2_core/names/topics.hpp>
-#include <as2_core/utils/frame_utils.hpp>
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <geometry_msgs/msg/twist_stamped.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
 
+#include "as2_core/aerial_platform.hpp"
+#include "as2_core/core_functions.hpp"
+#include "as2_core/names/topics.hpp"
+#include "as2_core/utils/tf_utils.hpp"
+
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>
+
 namespace ignition_platform {
-using Vector3d = Eigen::Vector3d;
 
 class IgnitionPlatform : public as2::AerialPlatform {
 public:
@@ -66,24 +63,29 @@ public:
   bool ownSetOffboardControl(bool offboard) override;
   bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &msg) override;
 
+  bool ownTakeoff() override;
+  bool ownLand() override;
+
   // Publishers
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr arm_pub_;
 
   // Subscribers
-  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
-  void poseCallback(const geometry_msgs::msg::PoseStamped &msg);
-  
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr stop_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr twist_state_sub_;
 
 private:
   as2_msgs::msg::ControlMode control_in_;
-  bool odometry_info_received_ = false;
-  geometry_msgs::msg::Quaternion self_orientation_;
   double yaw_rate_limit_ = M_PI_2;
+
+  bool state_received_ = false;
+  double current_height_ = 0.0;
+  double current_vertical_speed_ = 0.0;
+  std::shared_ptr<as2::tf::TfHandler> tf_handler_;
 
 private:
   void resetCommandTwistMsg();
+  void state_callback(const geometry_msgs::msg::TwistStamped::SharedPtr _twist_msg);
 };
 }  // namespace ignition_platform
 
