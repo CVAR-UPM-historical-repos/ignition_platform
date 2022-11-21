@@ -62,7 +62,8 @@ public:
   bool ownSetArmingState(bool state) override;
   bool ownSetOffboardControl(bool offboard) override;
   bool ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &msg) override;
-
+  void ownKillSwitch() override;
+  void ownStopPlatform() override;
   bool ownTakeoff() override;
   bool ownLand() override;
 
@@ -71,7 +72,6 @@ public:
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr arm_pub_;
 
   // Subscribers
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr stop_sub_;
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr twist_state_sub_;
 
 private:

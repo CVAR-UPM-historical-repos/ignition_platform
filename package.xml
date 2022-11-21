@@ -9,9 +9,10 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>rclcpp</depend>
-  <depend>geometry_msgs</depend>
   <depend>as2_core</depend>
+  <depend>as2_msgs</depend>
   <depend>ignition_assets</depend>
+  <depend>geometry_msgs</depend>
 
   <!-- linting test dependencies -->
   <test_depend>ament_lint_auto</test_depend>

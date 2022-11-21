@@ -15,10 +15,12 @@ endif()
 
 set(PROJECT_DEPENDENCIES
   ament_cmake
+  ament_cmake_ros
   rclcpp
-  geometry_msgs
   as2_core
+  as2_msgs
   ignition_assets
+  geometry_msgs
 )
 
 foreach(DEPENDENCY ${PROJECT_DEPENDENCIES})
@@ -38,12 +40,7 @@ include_directories(
 )
 
 add_executable(${PROJECT_NAME}_node src/${NODE_NAME}_main.cpp ${SOURCE_CPP_FILES} ${HEADER_HPP_FILES})
-ament_target_dependencies(${PROJECT_NAME}_node 
-  rclcpp
-  as2_core
-  as2_msgs
-  geometry_msgs
-)
+ament_target_dependencies(${PROJECT_NAME}_node ${PROJECT_DEPENDENCIES})
 
 if(BUILD_TESTING)
   find_package(ament_cmake_cppcheck REQUIRED)
