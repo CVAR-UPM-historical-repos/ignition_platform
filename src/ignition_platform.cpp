@@ -61,10 +61,6 @@ IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform() {
       this->create_publisher<geometry_msgs::msg::Twist>(cmd_vel_topic_param, rclcpp::QoS(1));
 
   arm_pub_ = this->create_publisher<std_msgs::msg::Bool>(arm_topic_param, rclcpp::QoS(1));
-
-  stop_sub_ = this->create_subscription<std_msgs::msg::Bool>(
-      this->generate_global_name("platform/stop"), rclcpp::SystemDefaultsQoS(),
-      [this](const std_msgs::msg::Bool::ConstSharedPtr msg) { ownSetArmingState(false); });
 }
 
 void IgnitionPlatform::resetCommandTwistMsg() {
@@ -113,6 +109,24 @@ bool IgnitionPlatform::ownSetOffboardControl(bool offboard) { return true; }
 bool IgnitionPlatform::ownSetPlatformControlMode(const as2_msgs::msg::ControlMode &control_in) {
   control_in_ = control_in;
   return true;
+}
+
+void IgnitionPlatform::ownKillSwitch() {
+  ownSetArmingState(false);
+  return;
+}
+
+void IgnitionPlatform::ownStopPlatform() {
+  geometry_msgs::msg::Twist twist_msg_hover;
+  twist_msg_hover.linear.x  = 0.0;
+  twist_msg_hover.linear.y  = 0.0;
+  twist_msg_hover.linear.z  = 0.0;
+  twist_msg_hover.angular.x = 0.0;
+  twist_msg_hover.angular.y = 0.0;
+  twist_msg_hover.angular.z = 0.0;
+
+  twist_pub_->publish(twist_msg_hover);
+  return;
 }
 
 bool IgnitionPlatform::ownTakeoff() {
