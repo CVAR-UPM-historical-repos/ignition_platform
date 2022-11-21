@@ -44,6 +44,19 @@ IgnitionPlatform::IgnitionPlatform() : as2::AerialPlatform() {
   this->declare_parameter<std::string>("arm_topic");
   std::string arm_topic_param = this->get_parameter("arm_topic").as_string();
 
+  // Use takeoff and land with platform for debugging purposes
+  this->declare_parameter<bool>("enable_takeoff_platform");
+  enable_takeoff_ = this->get_parameter("enable_takeoff_platform").as_bool();
+  if (enable_takeoff_) {
+    RCLCPP_INFO(this->get_logger(), "Enabled takeoff platform");
+  }
+
+  this->declare_parameter<bool>("enable_land_platform");
+  enable_land_ = this->get_parameter("enable_land_platform").as_bool();
+  if (enable_land_) {
+    RCLCPP_INFO(this->get_logger(), "Enabled land platform");
+  }
+
   twist_pub_ =
       this->create_publisher<geometry_msgs::msg::Twist>(cmd_vel_topic_param, rclcpp::QoS(1));
 
@@ -103,6 +116,11 @@ bool IgnitionPlatform::ownSetPlatformControlMode(const as2_msgs::msg::ControlMod
 }
 
 bool IgnitionPlatform::ownTakeoff() {
+  if (!enable_takeoff_) {
+    RCLCPP_WARN(this->get_logger(), "Takeoff platform not enabled");
+    return false;
+  }
+
   // Initialize tf and state callbacks
   tf_handler_ = std::make_shared<as2::tf::TfHandler>(this);
 
@@ -178,6 +196,11 @@ bool IgnitionPlatform::ownTakeoff() {
 }
 
 bool IgnitionPlatform::ownLand() {
+  if (!enable_land_) {
+    RCLCPP_WARN(this->get_logger(), "Land platform not enabled");
+    return false;
+  }
+
   // Initialize tf and state callbacks
   tf_handler_ = std::make_shared<as2::tf::TfHandler>(this);
 

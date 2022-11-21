@@ -22,9 +22,10 @@ def get_platform_node(context, *args, **kwargs):
         parameters=[{
             "use_sim_time": LaunchConfiguration('use_sim_time'),
             "control_modes_file": LaunchConfiguration('control_modes_file'),
-            "simulation_mode": True,
             "cmd_vel_topic": LaunchConfiguration('cmd_vel_topic'),
-            "arm_topic": LaunchConfiguration('arm_topic')
+            "arm_topic": LaunchConfiguration('arm_topic'),
+            "enable_takeoff_platform": LaunchConfiguration('enable_takeoff_platform'),
+            "enable_land_platform": LaunchConfiguration('enable_land_platform')
         }]
     )
     return [cmd_vel_topic, arm_topic, node]
@@ -54,7 +55,10 @@ def generate_launch_description():
         DeclareLaunchArgument('control_modes_file', default_value=config),
         DeclareLaunchArgument(
             'config_file', description='JSON configuration file to create bridges'),
-
+        DeclareLaunchArgument('enable_takeoff_platform', default_value='false',
+                              description='Enable takeoff platform, only for debugging purposes'),
+        DeclareLaunchArgument('enable_land_platform', default_value='false',
+                              description='Enable land platform, only for debugging purposes'),
         bridges,
         OpaqueFunction(function=get_platform_node)
     ])

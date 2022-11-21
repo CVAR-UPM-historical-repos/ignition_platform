@@ -78,6 +78,8 @@ private:
   as2_msgs::msg::ControlMode control_in_;
   double yaw_rate_limit_ = M_PI_2;
 
+  bool enable_takeoff_ = false;
+  bool enable_land_ = false;
   bool state_received_ = false;
   double current_height_ = 0.0;
   double current_vertical_speed_ = 0.0;
