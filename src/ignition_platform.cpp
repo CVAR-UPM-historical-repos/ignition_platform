@@ -196,8 +196,10 @@ bool IgnitionPlatform::ownTakeoff() {
     callback_group_executor_.spin_some();
 
     // Send command
-    twist_msg_flu = tf_handler_->convert(twist_msg, base_link);
-    twist_pub_->publish(twist_msg_flu.twist);
+    twist_msg_flu = twist_msg;
+    if (tf_handler_->tryConvert(twist_msg_flu, base_link)) {
+      twist_pub_->publish(twist_msg_flu.twist);
+    }
 
     rate.sleep();
   }
@@ -303,20 +305,17 @@ bool IgnitionPlatform::ownLand() {
 
 void IgnitionPlatform::state_callback(
     const geometry_msgs::msg::TwistStamped::SharedPtr _twist_msg) {
-  geometry_msgs::msg::TwistStamped twist_msg;
-  try {
-    twist_msg = tf_handler_->convert(*_twist_msg, "earth");
-  } catch (tf2::TransformException &ex) {
-    return;
-  }
-
   geometry_msgs::msg::PoseStamped pose_msg;
-  try {
-    pose_msg = tf_handler_->getPoseStamped("earth", as2::tf::generateTfName(this, "base_link"));
+  geometry_msgs::msg::TwistStamped twist_msg;
 
+  try {
+    auto [pose_msg, twist_msg] = tf_handler_->getState(*_twist_msg, "earth", "earth",
+                                                       as2::tf::generateTfName(this, "base_link"));
   } catch (tf2::TransformException &ex) {
+    RCLCPP_WARN(this->get_logger(), "Could not get transform: %s", ex.what());
     return;
   }
+
   current_height_         = pose_msg.pose.position.z;
   current_vertical_speed_ = twist_msg.twist.linear.z;
   state_received_         = true;
